@@ -1,0 +1,13 @@
+## Build cpp server 
+-lib hx-logging-manager
+-cp src
+-dce std
+-main MiroExporter
+-cpp build/cpp
+
+# ## Move binary to bin and remove build to clean up
+--next 
+--cmd mkdir -p ./bin && find ./build/cpp -maxdepth 1 -type f ! -name "*.*" -exec mv -t ./bin -- {} +
+
+## Clean up build directory
+# --cmd rm -rf ./build
