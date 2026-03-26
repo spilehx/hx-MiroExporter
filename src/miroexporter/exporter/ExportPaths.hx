@@ -20,4 +20,12 @@ class ExportPaths {
     public static function getRawDataDirectoryPath(outputDirectoryPath:String):String {
         return Path.join([outputDirectoryPath, "rawdata"]);
     }
+
+    public static function getExportedDirectoryPath(outputDirectoryPath:String):String {
+        return Path.join([outputDirectoryPath, "exported"]);
+    }
+
+    public static function getExportedResourcesDirectoryPath(exportedDirectoryPath:String):String {
+        return Path.join([exportedDirectoryPath, "resources"]);
+    }
 }
