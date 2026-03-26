@@ -9,6 +9,7 @@ import miroexporter.exporter.OfflineSummaryPageRenderer;
 import miroexporter.http.Request;
 import miroexporter.http.RestDataObject;
 import miroexporter.http.Route;
+import miroexporter.interactive.InteractiveExportRepository;
 import miroexporter.interactive.InteractiveExportState;
 import sys.FileSystem;
 import sys.io.File;
@@ -89,17 +90,21 @@ class UploadRoute extends Route {
 
     private function buildSummaryPage(exportedDirectoryPath:String):String {
         var boardInfo:Dynamic;
+        var exportKey:String;
+        var fileRoutePrefix:String;
         var resourceManifest:Dynamic;
 
+        exportKey = InteractiveExportRepository.getExportKey(exportedDirectoryPath);
+        fileRoutePrefix = "/file?export=" + StringTools.urlEncode(exportKey) + "&path=";
         boardInfo = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "board-info.json"])));
         resourceManifest = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "resource-manifest.json"])));
 
         return summaryPageRenderer.render(
             boardInfo,
             resourceManifest,
-            "/file?path=" + StringTools.urlEncode("board-info.json"),
-            "/file?path=" + StringTools.urlEncode("resource-manifest.json"),
-            "/file?path=",
+            fileRoutePrefix + StringTools.urlEncode("board-info.json"),
+            fileRoutePrefix + StringTools.urlEncode("resource-manifest.json"),
+            fileRoutePrefix,
             true
         );
     }

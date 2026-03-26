@@ -4,7 +4,7 @@ import haxe.io.Path;
 import miroexporter.http.Request;
 import miroexporter.http.RestDataObject;
 import miroexporter.http.Route;
-import miroexporter.interactive.InteractiveExportState;
+import miroexporter.interactive.InteractiveExportRepository;
 import sys.FileSystem;
 
 class FileRoute extends Route {
@@ -13,26 +13,29 @@ class FileRoute extends Route {
     }
 
     override public function handle(request:Request) {
+        var exportDirectoryPath:String;
+        var exportKey:String;
         var requestedRelativePath:String;
         var resolvedFilePath:String;
-        var rootDirectoryPath:String;
 
-        if (!InteractiveExportState.hasLatestExport()) {
-            request.reply("No export is currently available.", 404);
-            return;
-        }
+        exportKey = StringTools.urlDecode(request.getUrlParam("export"));
+        exportDirectoryPath = InteractiveExportRepository.resolveExportDirectoryPath(exportKey);
 
         requestedRelativePath = StringTools.urlDecode(request.getUrlParam("path"));
+
+        if (exportDirectoryPath == "") {
+            request.reply("Missing or invalid export parameter.", 400);
+            return;
+        }
 
         if (requestedRelativePath == "") {
             request.reply("Missing path parameter.", 400);
             return;
         }
 
-        rootDirectoryPath = Path.normalize(InteractiveExportState.latestExportedDirectoryPath);
-        resolvedFilePath = Path.normalize(Path.join([rootDirectoryPath, requestedRelativePath]));
+        resolvedFilePath = Path.normalize(Path.join([exportDirectoryPath, requestedRelativePath]));
 
-        if (!StringTools.startsWith(resolvedFilePath, rootDirectoryPath)) {
+        if (!isPathWithinExportDirectory(resolvedFilePath, exportDirectoryPath)) {
             request.reply("Invalid file path.", 400);
             return;
         }
@@ -43,5 +46,16 @@ class FileRoute extends Route {
         }
 
         request.replyWithFile(resolvedFilePath);
+    }
+
+    private function isPathWithinExportDirectory(candidatePath:String, exportDirectoryPath:String):Bool {
+        var normalizedCandidatePath:String;
+        var normalizedExportDirectoryPath:String;
+
+        normalizedCandidatePath = Path.normalize(candidatePath);
+        normalizedExportDirectoryPath = Path.addTrailingSlash(Path.normalize(exportDirectoryPath));
+
+        return StringTools.startsWith(normalizedCandidatePath, normalizedExportDirectoryPath)
+            || normalizedCandidatePath == Path.normalize(exportDirectoryPath);
     }
 }

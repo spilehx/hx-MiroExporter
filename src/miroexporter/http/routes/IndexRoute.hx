@@ -1,19 +1,49 @@
 package miroexporter.http.routes;
 
+import haxe.Json;
+import haxe.io.Path;
+import miroexporter.exporter.OfflineSummaryPageRenderer;
 import miroexporter.http.Request;
 import miroexporter.http.RestDataObject;
 import miroexporter.http.Route;
+import miroexporter.interactive.InteractiveExportRepository;
+import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
+import sys.io.File;
 
 class IndexRoute extends Route {
+    private var summaryPageRenderer:OfflineSummaryPageRenderer;
+
     public function new() {
         super("/", new RestDataObject(), "GET");
+        summaryPageRenderer = new OfflineSummaryPageRenderer();
     }
 
     override public function handle(request:Request) {
+        var exportDirectoryPath:String;
+        var exportKey:String;
+
+        exportKey = StringTools.urlDecode(request.getUrlParam("export"));
+
+        if (exportKey != "") {
+            exportDirectoryPath = InteractiveExportRepository.resolveExportDirectoryPath(exportKey);
+
+            if (exportDirectoryPath == "") {
+                request.replyWithHTML(buildHtmlPage("The selected export could not be found."));
+                return;
+            }
+
+            request.replyWithHTML(buildSummaryPage(exportDirectoryPath));
+            return;
+        }
+
         request.replyWithHTML(buildHtmlPage());
     }
 
-    private function buildHtmlPage():String {
+    private function buildHtmlPage(?errorMessage:String):String {
+        var existingExportsMarkup:String;
+
+        existingExportsMarkup = buildExistingExportsMarkup(InteractiveExportRepository.findAvailableExports());
+
         return '<!DOCTYPE html>\n'
             + '<html lang="en">\n'
             + '<head>\n'
@@ -84,6 +114,43 @@ class IndexRoute extends Route {
             + '    .error.visible {\n'
             + '      display: block;\n'
             + '    }\n'
+            + '    .existing-exports {\n'
+            + '      margin-top: 28px;\n'
+            + '      padding-top: 24px;\n'
+            + '      border-top: 1px solid #e1d4c5;\n'
+            + '    }\n'
+            + '    .existing-exports h2 {\n'
+            + '      margin: 0 0 10px;\n'
+            + '      font-size: 1.4rem;\n'
+            + '    }\n'
+            + '    .existing-exports-list {\n'
+            + '      display: grid;\n'
+            + '      gap: 12px;\n'
+            + '      margin-top: 16px;\n'
+            + '    }\n'
+            + '    .existing-export-link {\n'
+            + '      display: block;\n'
+            + '      padding: 16px 18px;\n'
+            + '      border: 1px solid #d9cfbf;\n'
+            + '      border-radius: 18px;\n'
+            + '      background: #fff8f1;\n'
+            + '      color: #241d16;\n'
+            + '      text-decoration: none;\n'
+            + '    }\n'
+            + '    .existing-export-link:hover {\n'
+            + '      background: #fff2e6;\n'
+            + '    }\n'
+            + '    .existing-export-name {\n'
+            + '      display: block;\n'
+            + '      font-weight: 700;\n'
+            + '      margin-bottom: 6px;\n'
+            + '    }\n'
+            + '    .existing-export-path {\n'
+            + '      display: block;\n'
+            + '      color: #6a5f52;\n'
+            + '      font-size: 0.95rem;\n'
+            + '      word-break: break-word;\n'
+            + '    }\n'
             + '  </style>\n'
             + '</head>\n'
             + '<body>\n'
@@ -94,7 +161,8 @@ class IndexRoute extends Route {
             + '      <input id="rtbFileInput" type="file" accept=".rtb" hidden>\n'
             + '      <button id="uploadButton" type="button">Upload .rtb file</button>\n'
             + '      <div id="statusMessage" class="status">Please wait. Uploading and processing the RTB file.</div>\n'
-            + '      <p id="errorMessage" class="error"></p>\n'
+            + '      <p id="errorMessage" class="error' + (errorMessage != null && errorMessage != "" ? ' visible' : '') + '">' + htmlEscape(errorMessage == null ? "" : errorMessage) + '</p>\n'
+            + existingExportsMarkup
             + '    </section>\n'
             + '  </main>\n'
             + '  <script>\n'
@@ -160,5 +228,58 @@ class IndexRoute extends Route {
             + '  </script>\n'
             + '</body>\n'
             + '</html>\n';
+    }
+
+    private function buildExistingExportsMarkup(existingExports:Array<InteractiveExportRecord>):String {
+        var markup:String;
+
+        markup = '      <section class="existing-exports">\n'
+            + '        <h2>Existing exports</h2>\n'
+            + '        <p>Open an export that has already been processed in this workspace.</p>\n';
+
+        if (existingExports.length == 0) {
+            return markup
+                + '        <p>No exported RTB summaries were found yet.</p>\n'
+                + '      </section>\n';
+        }
+
+        markup += '        <div class="existing-exports-list">\n';
+
+        for (existingExport in existingExports) {
+            markup += '          <a class="existing-export-link" href="/?export=' + StringTools.urlEncode(existingExport.exportKey) + '">\n'
+                + '            <span class="existing-export-name">' + htmlEscape(existingExport.boardName) + '</span>\n'
+                + '            <span class="existing-export-path">' + htmlEscape(existingExport.exportKey) + '</span>\n'
+                + '          </a>\n';
+        }
+
+        markup += '        </div>\n'
+            + '      </section>\n';
+
+        return markup;
+    }
+
+    private function buildSummaryPage(exportedDirectoryPath:String):String {
+        var boardInfo:Dynamic;
+        var exportKey:String;
+        var fileRoutePrefix:String;
+        var resourceManifest:Dynamic;
+
+        exportKey = InteractiveExportRepository.getExportKey(exportedDirectoryPath);
+        fileRoutePrefix = "/file?export=" + StringTools.urlEncode(exportKey) + "&path=";
+        boardInfo = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "board-info.json"])));
+        resourceManifest = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "resource-manifest.json"])));
+
+        return summaryPageRenderer.render(
+            boardInfo,
+            resourceManifest,
+            fileRoutePrefix + StringTools.urlEncode("board-info.json"),
+            fileRoutePrefix + StringTools.urlEncode("resource-manifest.json"),
+            fileRoutePrefix,
+            true
+        );
+    }
+
+    private function htmlEscape(value:String):String {
+        return StringTools.htmlEscape(value == null ? "" : value, true);
     }
 }

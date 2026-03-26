@@ -4,6 +4,7 @@ import miroexporter.http.HTTPServer;
 import miroexporter.http.routes.FileRoute;
 import miroexporter.http.routes.IndexRoute;
 import miroexporter.http.routes.UploadRoute;
+import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
 import sys.thread.Thread;
 
 class InteractiveUI {
@@ -12,6 +13,11 @@ class InteractiveUI {
     }
 
     public function startHttpServer() {
+        var availableExports:Array<InteractiveExportRecord>;
+
+        availableExports = InteractiveExportRepository.findAvailableExports();
+        USER_MESSAGE_INFO("Discovered " + availableExports.length + " existing exported RTB summaries.");
+
         Thread.runWithEventLoop(function() {
             var httpServer:HTTPServer;
 
