@@ -17,7 +17,7 @@ class MiroExporterApp {
 	}
 
 	public function init() {
-		USER_MESSAGE("Starting Miro Exporter", true);
+		// USER_MESSAGE("Starting Miro Exporter", true);
 	}
 
 	public function parseArgs() {
@@ -38,7 +38,7 @@ class MiroExporterApp {
 			case "uninstall":
 				runUninstall();
 			case "version":
-				USER_MESSAGE("MiroExporter " + VersionInfo.APPLICATION_VERSION, true);
+				USER_MESSAGE(VersionInfo.APPLICATION_VERSION, true);
 			default:
 				USER_MESSAGE_ERROR("Unknown command: " + args[0]);
 				USER_MESSAGE("");
@@ -48,7 +48,7 @@ class MiroExporterApp {
 	}
 
 	private function runInteractive(){
-		USER_MESSAGE("Running interactive");
+		USER_MESSAGE("Starting Miro Exporter Interactive mode", true);
 		new InteractiveUI().startHttpServer();
 	}
 
@@ -138,6 +138,7 @@ class MiroExporterApp {
 	}
 
 	private function runExtract(args:Array<String>):Void {
+		USER_MESSAGE("Starting Miro Exporter", true);
 		if (args.length < 2) {
 			USER_MESSAGE_ERROR("No .rtb file path provided for extraction.");
 			USER_MESSAGE("");
