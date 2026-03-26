@@ -1,1 +1,49 @@
+name: Release
 
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to create
+        required: true
+        type: string
+      release_name:
+        description: Release name
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Haxe
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: 4.3.6
+
+      - name: Install Haxe dependencies
+        run: |
+          haxelib install hxcpp --quiet
+          haxelib install hx_webserver --quiet
+          haxelib git hx-logging-manager https://github.com/spilehx/hx-logging-manager.git
+
+      - name: Build project
+        run: haxe build.hxml
+
+      - name: Verify release binary
+        run: test -f ./bin/MiroExporter
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name }}
+          name: ${{ inputs.release_name != '' && inputs.release_name || inputs.tag_name }}
+          files: ./bin/MiroExporter
+          generate_release_notes: true
