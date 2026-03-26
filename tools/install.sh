@@ -4,6 +4,9 @@ set -e
 
 tmpdir="$(mktemp -d)"
 
+LATEST_VERSION=""
+CURRENT_VERSION=""
+
 print_new_install_description() {
 	echo "This installer will:"
 	echo "- download the latest MiroExporter release from GitHub"
@@ -13,11 +16,7 @@ print_new_install_description() {
 }
 
 print_already_installed_description() {
-    CURRENT_VERSION=$(MiroExporter version 2>/dev/null || echo "unknown")
-    echo "MiroExporter V$CURRENT_VERSION is already installed."
-
-
-    # echo "If you want to reinstall, please uninstall first by running 'MiroExporter uninstall' and then run this installer again."
+    echo "MiroExporter $CURRENT_VERSION is already installed."
 }
 
 confirm_proceed() {
@@ -29,8 +28,6 @@ confirm_proceed() {
 		exit 0
 	fi
 }
-
-
 
 cleanup() {
 	rm -rf "$tmpdir"
@@ -75,12 +72,30 @@ start_not_currently_installed_flow(){
 
 
 start_already_installed_flow(){
+    CURRENT_VERSION=$(retrieve_currently_installed_version)
+
+
     print_already_installed_description
+
 }
 
+retrieve_latest_version() {
+    curl -sL "https://api.github.com/repos/spilehx/hx-MiroExporter/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+}
 
+retrieve_currently_installed_version() {
+    MiroExporter version 2>/dev/null || echo "unknown"
+}
+
+is_newer_version_available() {
+    ## should compare LATEST_VERSION and CURRENT_VERSION, return true if LATEST_VERSION is newer than CURRENT_VERSION, false otherwise.
+    ## version strings follow a semantic versioning pattern are in the format "X.Y.Z", where X, Y, and Z are integers. For example, "1.2.3".
+}
 
 main() {
+    LATEST_VERSION=$(retrieve_latest_version)
+#  echo "Latest MiroExporter version: $LATEST_VERSION"
+
     if command -v MiroExporter >/dev/null 2>&1; then
         start_already_installed_flow
     else
