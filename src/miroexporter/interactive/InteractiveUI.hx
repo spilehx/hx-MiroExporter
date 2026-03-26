@@ -7,6 +7,8 @@ import miroexporter.http.routes.IndexRoute;
 import miroexporter.http.routes.OpenResourcesFolderRoute;
 import miroexporter.http.routes.UploadRoute;
 import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
+import sys.net.Host;
+import sys.net.Socket;
 import sys.thread.Thread;
 
 class InteractiveUI {
@@ -24,6 +26,12 @@ class InteractiveUI {
         USER_MESSAGE_INFO("Discovered " + availableExports.length + " existing exported RTB summaries.");
         serverUrl = buildServerUrl(DEFAULT_HTTP_PORT);
 
+        if (isInteractiveServerAlreadyRunning(DEFAULT_HTTP_PORT)) {
+            USER_MESSAGE_INFO("Interactive server is already running. Opening browser only.");
+            openUrlInDefaultBrowser(serverUrl);
+            return;
+        }
+
         Thread.runWithEventLoop(function() {
             var httpServer:HTTPServer;
 
@@ -40,6 +48,25 @@ class InteractiveUI {
 
     private function buildServerUrl(port:Int):String {
         return "http://localhost:" + port + "/";
+    }
+
+    private function isInteractiveServerAlreadyRunning(port:Int):Bool {
+        var socket:Socket;
+
+        socket = new Socket();
+
+        try {
+            socket.connect(new Host("127.0.0.1"), port);
+            socket.close();
+            return true;
+        } catch (error:Dynamic) {
+            try {
+                socket.close();
+            } catch (closeError:Dynamic) {
+            }
+
+            return false;
+        }
     }
 
     private function openBrowserWhenServerIsReady(serverUrl:String):Void {
