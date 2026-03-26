@@ -1,6 +1,7 @@
 package miroexporter.interactive;
 
 import miroexporter.http.HTTPServer;
+import miroexporter.http.routes.DeleteExportRoute;
 import miroexporter.http.routes.FileRoute;
 import miroexporter.http.routes.IndexRoute;
 import miroexporter.http.routes.UploadRoute;
@@ -24,6 +25,7 @@ class InteractiveUI {
             httpServer = HTTPServer.instance;
             httpServer.addRoute(IndexRoute);
             httpServer.addRoute(UploadRoute);
+            httpServer.addRoute(DeleteExportRoute);
             httpServer.addRoute(FileRoute);
             httpServer.startServer();
         });

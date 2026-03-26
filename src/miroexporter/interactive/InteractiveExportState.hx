@@ -10,4 +10,8 @@ class InteractiveExportState {
     public static function hasLatestExport():Bool {
         return latestExportedDirectoryPath != null && latestExportedDirectoryPath != "";
     }
+
+    public static function clearLatestExportedDirectoryPath():Void {
+        latestExportedDirectoryPath = null;
+    }
 }

@@ -28,7 +28,7 @@ class DirectoryPreparer {
         FileSystem.createDirectory(directoryPath);
     }
 
-    private function deleteDirectoryRecursively(directoryPath:String):Void {
+    public function deleteDirectoryRecursively(directoryPath:String):Void {
         var childPath:String;
 
         if (!FileSystem.isDirectory(directoryPath)) {

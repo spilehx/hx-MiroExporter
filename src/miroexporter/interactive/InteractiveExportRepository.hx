@@ -66,6 +66,10 @@ class InteractiveExportRepository {
         return normalizedExportDirectoryPath;
     }
 
+    public static function getExportOutputDirectoryPath(exportDirectoryPath:String):String {
+        return Path.normalize(Path.directory(exportDirectoryPath));
+    }
+
     private static function collectExportDirectoryPaths(directoryPath:String, exportDirectoryPaths:Array<String>):Void {
         var childPath:String;
         var entryName:String;
