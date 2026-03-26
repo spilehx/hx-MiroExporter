@@ -39,3 +39,11 @@ For example:
 ```text
 ~/MiroExporter/interactive_uploads
 ```
+
+## Quick install
+
+```bash
+tmp="$(mktemp)" && curl -L https://github.com/spilehx/hx-MiroExporter/releases/latest/download/MiroExporter -o "$tmp" && chmod +x "$tmp" && "$tmp" install && rm -f "$tmp"
+```
+
+This downloads the latest release binary with `curl`, makes it executable, runs the built-in `install` command to install `MiroExporter` globally, and then removes the temporary downloaded file.
