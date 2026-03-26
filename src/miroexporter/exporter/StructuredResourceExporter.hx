@@ -1,76 +1,82 @@
 package miroexporter.exporter;
 
-import haxe.Json;
 import haxe.io.Path;
+import miroexporter.exporter.ExportModels.ExportedResourceInfo;
+import miroexporter.exporter.ExportModels.RawResourceEntry;
+import miroexporter.exporter.ExportModels.RawResourcesData;
 import sys.FileSystem;
 import sys.io.File;
 
-typedef ResourceManifest = {
-    var resources:Array<ResourceManifestEntry>;
-}
-
-typedef ResourceManifestEntry = {
-    var id:Float;
-    var name:String;
-    var extension:String;
-}
-
 class StructuredResourceExporter {
     private var directoryPreparer:DirectoryPreparer;
+    private var rawDataReader:RawDataReader;
 
-    public function new(directoryPreparer:DirectoryPreparer) {
+    public function new(directoryPreparer:DirectoryPreparer, rawDataReader:RawDataReader) {
         this.directoryPreparer = directoryPreparer;
+        this.rawDataReader = rawDataReader;
     }
 
-    public function exportResources(rawDataDirectoryPath:String, exportedDirectoryPath:String):Void {
+    public function exportResources(rawDataDirectoryPath:String, exportedDirectoryPath:String):Array<ExportedResourceInfo> {
+        var exportedResources:Array<ExportedResourceInfo>;
         var resourcesDirectoryPath:String;
-        var resourceManifest:ResourceManifest;
+        var resourcesData:RawResourcesData;
 
         resourcesDirectoryPath = ExportPaths.getExportedResourcesDirectoryPath(exportedDirectoryPath);
         directoryPreparer.ensureDirectoryExists(resourcesDirectoryPath);
+        resourcesData = rawDataReader.readResourcesData(rawDataDirectoryPath);
+        exportedResources = [];
 
-        resourceManifest = readResourceManifest(rawDataDirectoryPath);
-
-        for (resourceManifestEntry in resourceManifest.resources) {
-            exportResourceIfSupported(resourceManifestEntry, rawDataDirectoryPath, resourcesDirectoryPath);
+        for (resourceEntry in resourcesData.resources) {
+            exportResourceIfSupported(resourceEntry, rawDataDirectoryPath, resourcesDirectoryPath, exportedResources);
         }
+
+        return exportedResources;
     }
 
-    private function readResourceManifest(rawDataDirectoryPath:String):ResourceManifest {
-        var resourceManifestPath:String;
-        var resourceManifestContent:String;
-
-        resourceManifestPath = Path.join([rawDataDirectoryPath, "resources.json"]);
-        resourceManifestContent = File.getContent(resourceManifestPath);
-
-        return Json.parse(resourceManifestContent);
-    }
-
-    private function exportResourceIfSupported(resourceManifestEntry:ResourceManifestEntry, rawDataDirectoryPath:String, resourcesDirectoryPath:String):Void {
+    private function exportResourceIfSupported(resourceEntry:RawResourceEntry, rawDataDirectoryPath:String, resourcesDirectoryPath:String, exportedResources:Array<ExportedResourceInfo>):Void {
+        var exportedResource:ExportedResourceInfo;
+        var sourceFileBytes:haxe.io.Bytes;
         var sourceFilePath:String;
         var targetFilePath:String;
         var sourceFileName:String;
         var targetFileName:String;
 
-        if (!isSupportedResourceExtension(resourceManifestEntry.extension)) {
+        if (!isSupportedResourceExtension(resourceEntry.extension)) {
             return;
         }
 
-        sourceFileName = buildRawDataResourceFileName(resourceManifestEntry);
+        sourceFileName = buildRawDataResourceFileName(resourceEntry);
         sourceFilePath = Path.join([rawDataDirectoryPath, sourceFileName]);
 
         if (!FileSystem.exists(sourceFilePath)) {
             return;
         }
 
-        targetFileName = getUniqueFileName(resourceManifestEntry.name, resourcesDirectoryPath);
+        targetFileName = getUniqueFileName(resourceEntry.name, resourcesDirectoryPath);
         targetFilePath = Path.join([resourcesDirectoryPath, targetFileName]);
+        sourceFileBytes = File.getBytes(sourceFilePath);
+        File.saveBytes(targetFilePath, sourceFileBytes);
 
-        File.copy(sourceFilePath, targetFilePath);
+        exportedResource = {
+            id: resourceEntry.id,
+            originalFileName: resourceEntry.name,
+            exportedFileName: targetFileName,
+            rawFileName: sourceFileName,
+            extension: resourceEntry.extension,
+            resourceType: resourceEntry.type,
+            infected: resourceEntry.infected,
+            category: getResourceCategory(resourceEntry.extension),
+            mimeType: getMimeType(resourceEntry.extension),
+            rawPath: Path.join(["rawdata", sourceFileName]),
+            exportedPath: Path.join(["exported", "resources", targetFileName]),
+            fileSizeBytes: sourceFileBytes.length
+        };
+
+        exportedResources.push(exportedResource);
     }
 
-    private function buildRawDataResourceFileName(resourceManifestEntry:ResourceManifestEntry):String {
-        return Std.string(Std.int(resourceManifestEntry.id)) + "." + resourceManifestEntry.extension;
+    private function buildRawDataResourceFileName(resourceEntry:RawResourceEntry):String {
+        return resourceEntry.id + "." + resourceEntry.extension;
     }
 
     private function isSupportedResourceExtension(extension:String):Bool {
@@ -82,6 +88,50 @@ class StructuredResourceExporter {
             || normalizedExtension == "svg"
             || normalizedExtension == "jpg"
             || normalizedExtension == "mp4";
+    }
+
+    private function getResourceCategory(extension:String):String {
+        var normalizedExtension:String;
+
+        normalizedExtension = extension.toLowerCase();
+
+        if (normalizedExtension == "png" || normalizedExtension == "jpg") {
+            return "image";
+        }
+
+        if (normalizedExtension == "svg") {
+            return "vector";
+        }
+
+        if (normalizedExtension == "mp4") {
+            return "video";
+        }
+
+        return "unknown";
+    }
+
+    private function getMimeType(extension:String):String {
+        var normalizedExtension:String;
+
+        normalizedExtension = extension.toLowerCase();
+
+        if (normalizedExtension == "png") {
+            return "image/png";
+        }
+
+        if (normalizedExtension == "jpg") {
+            return "image/jpeg";
+        }
+
+        if (normalizedExtension == "svg") {
+            return "image/svg+xml";
+        }
+
+        if (normalizedExtension == "mp4") {
+            return "video/mp4";
+        }
+
+        return "application/octet-stream";
     }
 
     private function getUniqueFileName(requestedFileName:String, directoryPath:String):String {

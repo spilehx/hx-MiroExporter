@@ -1,17 +1,28 @@
 package miroexporter.exporter;
 
+import miroexporter.exporter.ExportModels.ExportedResourceInfo;
+
 class Exporter {
+    private var boardInfoExporter:BoardInfoExporter;
     private var directoryPreparer:DirectoryPreparer;
+    private var offlineHtmlExporter:OfflineHtmlExporter;
+    private var rawDataReader:RawDataReader;
+    private var resourceManifestExporter:ResourceManifestExporter;
     private var rtbArchiveExtractor:RtbArchiveExtractor;
     private var structuredResourceExporter:StructuredResourceExporter;
 
     public function new() {
+        rawDataReader = new RawDataReader();
         directoryPreparer = new DirectoryPreparer();
         rtbArchiveExtractor = new RtbArchiveExtractor(directoryPreparer);
-        structuredResourceExporter = new StructuredResourceExporter(directoryPreparer);
+        structuredResourceExporter = new StructuredResourceExporter(directoryPreparer, rawDataReader);
+        boardInfoExporter = new BoardInfoExporter(rawDataReader);
+        offlineHtmlExporter = new OfflineHtmlExporter();
+        resourceManifestExporter = new ResourceManifestExporter();
     }
 
     public function export(path:String):Void {
+        var exportedResources:Array<ExportedResourceInfo>;
         var outputDirectoryPath:String;
         var rawDataDirectoryPath:String;
         var exportedDirectoryPath:String;
@@ -31,7 +42,10 @@ class Exporter {
         directoryPreparer.ensureDirectoryExists(exportedDirectoryPath);
         USER_MESSAGE_INFO("Prepared structured export directory: " + exportedDirectoryPath);
 
-        structuredResourceExporter.exportResources(rawDataDirectoryPath, exportedDirectoryPath);
+        exportedResources = structuredResourceExporter.exportResources(rawDataDirectoryPath, exportedDirectoryPath);
+        boardInfoExporter.exportBoardInfo(rawDataDirectoryPath, exportedDirectoryPath, exportedResources);
+        resourceManifestExporter.exportResourceManifest(exportedDirectoryPath, exportedResources);
+        offlineHtmlExporter.exportIndexHtml(exportedDirectoryPath);
         USER_MESSAGE_INFO("Exported supported resources to structured output.");
     }
 }
