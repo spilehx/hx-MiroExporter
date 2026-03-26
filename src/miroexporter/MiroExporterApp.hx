@@ -2,11 +2,15 @@ package miroexporter;
 
 import miroexporter.interactive.InteractiveUI;
 import miroexporter.exporter.Exporter;
+import haxe.Resource;
 import haxe.io.Path;
 import sys.FileSystem;
+import sys.io.File;
 
 class MiroExporterApp {
 	private static final INSTALLED_BINARY_PATH:String = "/usr/local/bin/MiroExporter";
+	private static final INSTALLED_ICON_PATH:String = "/usr/local/share/icons/hicolor/256x256/apps/miroexporter.png";
+	private static final INSTALLED_DESKTOP_ENTRY_PATH:String = "/usr/share/applications/miroexporter.desktop";
 
 	public function new() {
 		spilehx.logger.GlobalLoggingSettings.settings.verbose = true;
@@ -88,6 +92,20 @@ class MiroExporterApp {
 			Sys.exit(installExitCode);
 		}
 
+		installExitCode = installIconFile();
+
+		if (installExitCode != 0) {
+			USER_MESSAGE_ERROR("Icon installation failed with exit code " + installExitCode);
+			Sys.exit(installExitCode);
+		}
+
+		installExitCode = installDesktopEntry();
+
+		if (installExitCode != 0) {
+			USER_MESSAGE_ERROR("Desktop launcher installation failed with exit code " + installExitCode);
+			Sys.exit(installExitCode);
+		}
+
 		USER_MESSAGE_INFO("Installation complete. You can now run: MiroExporter");
 	}
 
@@ -118,6 +136,90 @@ class MiroExporterApp {
 
 	private function getCurrentExecutablePath():String {
 		return Path.normalize(Sys.programPath());
+	}
+
+	private function installIconFile():Int {
+		var createDirectoryExitCode:Int;
+		var embeddedIconBytes:haxe.io.Bytes;
+		var installIconExitCode:Int;
+		var temporaryDirectoryPath:String;
+		var temporaryIconPath:String;
+
+		USER_MESSAGE_INFO("Installing application icon to " + INSTALLED_ICON_PATH);
+
+		embeddedIconBytes = Resource.getBytes(EmbeddedAssets.INSTALLER_ICON_RESOURCE_NAME);
+
+		if (embeddedIconBytes == null || embeddedIconBytes.length == 0) {
+			USER_MESSAGE_ERROR("Embedded installer icon could not be loaded from the binary.");
+			return 1;
+		}
+
+		createDirectoryExitCode = Sys.command("sudo", [
+			"mkdir",
+			"-p",
+			Path.directory(INSTALLED_ICON_PATH)
+		]);
+
+		if (createDirectoryExitCode != 0) {
+			return createDirectoryExitCode;
+		}
+
+		temporaryDirectoryPath = Sys.getEnv("TMPDIR") != null && Sys.getEnv("TMPDIR") != "" ? Sys.getEnv("TMPDIR") : "/tmp";
+		temporaryIconPath = Path.normalize(Path.join([temporaryDirectoryPath, "miroexporter-icon.png"]));
+		File.saveBytes(temporaryIconPath, embeddedIconBytes);
+
+		installIconExitCode = Sys.command("sudo", [
+			"install",
+			"-m",
+			"644",
+			temporaryIconPath,
+			INSTALLED_ICON_PATH
+		]);
+
+		if (FileSystem.exists(temporaryIconPath)) {
+			FileSystem.deleteFile(temporaryIconPath);
+		}
+
+		return installIconExitCode;
+	}
+
+	private function installDesktopEntry():Int {
+		var desktopEntryContent:String;
+		var installDesktopEntryExitCode:Int;
+		var temporaryDesktopEntryPath:String;
+		var temporaryDirectoryPath:String;
+
+		desktopEntryContent = buildDesktopEntryContent();
+		temporaryDirectoryPath = Sys.getEnv("TMPDIR") != null && Sys.getEnv("TMPDIR") != "" ? Sys.getEnv("TMPDIR") : "/tmp";
+		temporaryDesktopEntryPath = Path.normalize(Path.join([temporaryDirectoryPath, "miroexporter.desktop"]));
+		File.saveContent(temporaryDesktopEntryPath, desktopEntryContent);
+
+		USER_MESSAGE_INFO("Installing GNOME launcher to " + INSTALLED_DESKTOP_ENTRY_PATH);
+		installDesktopEntryExitCode = Sys.command("sudo", [
+			"install",
+			"-m",
+			"644",
+			temporaryDesktopEntryPath,
+			INSTALLED_DESKTOP_ENTRY_PATH
+		]);
+
+		if (FileSystem.exists(temporaryDesktopEntryPath)) {
+			FileSystem.deleteFile(temporaryDesktopEntryPath);
+		}
+
+		return installDesktopEntryExitCode;
+	}
+
+	private function buildDesktopEntryContent():String {
+		return "[Desktop Entry]\n"
+			+ "Version=1.0\n"
+			+ "Type=Application\n"
+			+ "Name=MiroExporter\n"
+			+ "Comment=Open the MiroExporter interactive viewer\n"
+			+ "Exec=" + INSTALLED_BINARY_PATH + " interactive\n"
+			+ "Icon=" + INSTALLED_ICON_PATH + "\n"
+			+ "Terminal=false\n"
+			+ "Categories=Utility;\n";
 	}
 
 	private function wantsHelp(arg:String):Bool {
