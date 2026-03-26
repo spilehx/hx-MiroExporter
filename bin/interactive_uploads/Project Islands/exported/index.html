@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Islands - Offline Export</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f0e8;
+      --panel: #fffdfa;
+      --ink: #1f1b16;
+      --muted: #6a5f52;
+      --line: #ddd1c1;
+      --accent: #b85c38;
+      --accent-soft: #f2d5c8;
+      --shadow: 0 18px 40px rgba(44, 29, 16, 0.08);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: radial-gradient(circle at top left, #fff7ed 0, var(--bg) 45%, #ebe3d5 100%);
+      color: var(--ink);
+    }
+    a {
+      color: var(--accent);
+    }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    .hero,
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.1;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+    }
+    h2 {
+      margin-bottom: 18px;
+      font-size: 1.6rem;
+    }
+    .subtitle {
+      margin: 14px 0 0;
+      color: var(--muted);
+      max-width: 56ch;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .actions a,
+    .resource-links a {
+      text-decoration: none;
+      font-weight: 700;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff6f1;
+    }
+    .section {
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .stat-card,
+    .meta-item,
+    .note,
+    .resource-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fffefb;
+    }
+    .stat-card {
+      padding: 16px;
+    }
+    .stat-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .stat-value {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .meta-item {
+      padding: 14px 16px;
+    }
+    .meta-label,
+    dt {
+      display: block;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+    .meta-value,
+    dd {
+      margin: 0;
+      word-break: break-word;
+    }
+    .note {
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .warn {
+      background: var(--accent-soft);
+    }
+    .resource-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .resource-card {
+      overflow: hidden;
+    }
+    .preview {
+      aspect-ratio: 16 / 10;
+      background: linear-gradient(135deg, #f6ede4, #efe1cf);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview img,
+    .preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+    .resource-body {
+      padding: 16px;
+    }
+    .resource-type {
+      margin: 8px 0 14px;
+      color: var(--muted);
+      text-transform: capitalize;
+    }
+    .details {
+      margin: 0 0 16px;
+      display: grid;
+      gap: 12px;
+    }
+    @media (max-width: 800px) {
+      .hero {
+        flex-direction: column;
+      }
+      .actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Miro RTB Offline Export</p>
+        <h1>Project Islands</h1>
+        <p class="subtitle">Private board | RTB archive version 1.20</p>
+      </div>
+      <div class="actions">
+        <a href="board-info.json">board-info.json</a>
+        <a href="resource-manifest.json">resource-manifest.json</a>
+      </div>
+    </header>
+    <section class="section">
+      <h2>Overview</h2>
+      <div class="stats">
+        <article class="stat-card">
+          <p class="stat-label">Supported resources</p>
+          <p class="stat-value">3</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Images</p>
+          <p class="stat-value">3</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Vectors</p>
+          <p class="stat-value">0</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Videos</p>
+          <p class="stat-value">0</p>
+        </article>
+      </div>
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Board ID</span>
+          <span class="meta-value">-5082077714447400840</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Icon Resource ID</span>
+          <span class="meta-value">3458764514587116487</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archive Version</span>
+          <span class="meta-value">1.20</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Encryption Version</span>
+          <span class="meta-value">1.1</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Timestamp (Unix)</span>
+          <span class="meta-value">1774483666</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Public</span>
+          <span class="meta-value">false</span>
+        </div>
+      </div>
+      <div class="note">
+        <strong>Description:</strong> No description provided.
+      </div>
+      <div class="note warn">
+        <strong>Limitations:</strong> Board layout and canvas objects are not reconstructed because the main canvas payload is not readable from the exported RTB data.
+      </div>
+    </section>
+    <section class="section">
+      <h2>Resources</h2>
+      <div class="resource-grid">
+        <article class="resource-card">
+          <div class="preview">
+            <img src="resources/image.png" alt="image.png">
+          </div>
+          <div class="resource-body">
+            <h3>image.png</h3>
+            <p class="resource-type">image | image/png</p>
+            <dl class="details">
+              <div>
+                <dt>Resource ID</dt>
+                <dd>3458764514790168680</dd>
+              </div>
+              <div>
+                <dt>Exported file</dt>
+                <dd>image.png</dd>
+              </div>
+              <div>
+                <dt>File size</dt>
+                <dd>2.8 KB</dd>
+              </div>
+              <div>
+                <dt>Raw path</dt>
+                <dd>rawdata/3458764514790168680.png</dd>
+              </div>
+            </dl>
+            <div class="resource-links">
+              <a href="resources/image.png">Open file</a>
+            </div>
+          </div>
+        </article>
+        <article class="resource-card">
+          <div class="preview">
+            <img src="resources/Screenshot from 2023-02-10 01-25-26.png" alt="Screenshot from 2023-02-10 01-25-26.png">
+          </div>
+          <div class="resource-body">
+            <h3>Screenshot from 2023-02-10 01-25-26.png</h3>
+            <p class="resource-type">image | image/png</p>
+            <dl class="details">
+              <div>
+                <dt>Resource ID</dt>
+                <dd>3458764514587116487</dd>
+              </div>
+              <div>
+                <dt>Exported file</dt>
+                <dd>Screenshot from 2023-02-10 01-25-26.png</dd>
+              </div>
+              <div>
+                <dt>File size</dt>
+                <dd>26.3 KB</dd>
+              </div>
+              <div>
+                <dt>Raw path</dt>
+                <dd>rawdata/3458764514587116487.png</dd>
+              </div>
+            </dl>
+            <div class="resource-links">
+              <a href="resources/Screenshot from 2023-02-10 01-25-26.png">Open file</a>
+            </div>
+          </div>
+        </article>
+        <article class="resource-card">
+          <div class="preview">
+            <img src="resources/image(1).png" alt="image.png">
+          </div>
+          <div class="resource-body">
+            <h3>image.png</h3>
+            <p class="resource-type">image | image/png</p>
+            <dl class="details">
+              <div>
+                <dt>Resource ID</dt>
+                <dd>3458764514790168684</dd>
+              </div>
+              <div>
+                <dt>Exported file</dt>
+                <dd>image(1).png</dd>
+              </div>
+              <div>
+                <dt>File size</dt>
+                <dd>2.1 KB</dd>
+              </div>
+              <div>
+                <dt>Raw path</dt>
+                <dd>rawdata/3458764514790168684.png</dd>
+              </div>
+            </dl>
+            <div class="resource-links">
+              <a href="resources/image(1).png">Open file</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -65,7 +65,7 @@ class HTTPRequest {
 
         @:privateAccess
         response = server.prepareHttpResponse(code, mime, haxe.io.Bytes.ofString(text));
-        client.output.writeFullBytes(response, 0, response.length);
+        finishResponse(response);
     }
 
     public function reply(text:String, ?code:Int = 200):Void {
@@ -73,7 +73,7 @@ class HTTPRequest {
 
         @:privateAccess
         response = server.prepareHttpResponse(code, "text/plain", haxe.io.Bytes.ofString(text));
-        client.output.writeFullBytes(response, 0, response.length);
+        finishResponse(response);
     }
 
     public function replyWithFile(file:String, ?code:Int = 200):Void {
@@ -90,11 +90,17 @@ class HTTPRequest {
 
         @:privateAccess
         response = server.prepareHttpResponse(code, mime, bytes);
-        client.output.writeFullBytes(response, 0, response.length);
+        finishResponse(response);
     }
 
     public function replyRaw(bytes:Bytes):Void {
-        client.output.writeFullBytes(bytes, 0, bytes.length);
+        finishResponse(bytes);
+    }
+
+    private function finishResponse(response:Bytes):Void {
+        client.output.writeFullBytes(response, 0, response.length);
+        client.output.flush();
+        client.close();
     }
 
     private function readHeaders():Void {

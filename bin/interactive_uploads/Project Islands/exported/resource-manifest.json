@@ -1,0 +1,46 @@
+{
+  "resources": [
+    {
+      "infected": false,
+      "rawFileName": "3458764514790168680.png",
+      "resourceType": "WIDGET",
+      "category": "image",
+      "extension": "png",
+      "id": "3458764514790168680",
+      "exportedFileName": "image.png",
+      "rawPath": "rawdata/3458764514790168680.png",
+      "originalFileName": "image.png",
+      "fileSizeBytes": 2846,
+      "mimeType": "image/png",
+      "exportedPath": "exported/resources/image.png"
+    },
+    {
+      "infected": false,
+      "rawFileName": "3458764514587116487.png",
+      "resourceType": "AVATAR",
+      "category": "image",
+      "extension": "png",
+      "id": "3458764514587116487",
+      "exportedFileName": "Screenshot from 2023-02-10 01-25-26.png",
+      "rawPath": "rawdata/3458764514587116487.png",
+      "originalFileName": "Screenshot from 2023-02-10 01-25-26.png",
+      "fileSizeBytes": 26971,
+      "mimeType": "image/png",
+      "exportedPath": "exported/resources/Screenshot from 2023-02-10 01-25-26.png"
+    },
+    {
+      "infected": false,
+      "rawFileName": "3458764514790168684.png",
+      "resourceType": "WIDGET",
+      "category": "image",
+      "extension": "png",
+      "id": "3458764514790168684",
+      "exportedFileName": "image(1).png",
+      "rawPath": "rawdata/3458764514790168684.png",
+      "originalFileName": "image.png",
+      "fileSizeBytes": 2154,
+      "mimeType": "image/png",
+      "exportedPath": "exported/resources/image(1).png"
+    }
+  ]
+}
