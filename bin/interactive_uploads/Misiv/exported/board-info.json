@@ -1,0 +1,30 @@
+{
+  "archive": {
+    "encryptionVersion": "1.1",
+    "format": "rtb",
+    "timestampUnix": 1774483650,
+    "version": "1.20"
+  },
+  "board": {
+    "startViewWidgetId": "",
+    "isPublic": false,
+    "iconResourceId": "3458764514977052065",
+    "id": "-5082077764200247393",
+    "name": "Misiv",
+    "description": ""
+  },
+  "resourcesSummary": {
+    "infected": 0,
+    "vectors": 3,
+    "videos": 0,
+    "images": 10,
+    "totalResources": 13,
+    "documents": 0,
+    "supportedOfflineResources": 13
+  },
+  "limitations": {
+    "canvasDataReadable": false,
+    "tablesDataReadable": false,
+    "layoutRecovered": false
+  }
+}
