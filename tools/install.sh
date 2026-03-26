@@ -6,6 +6,7 @@ tmpdir="$(mktemp -d)"
 
 LATEST_VERSION=""
 CURRENT_VERSION=""
+UPDATE_AVAILABLE=false
 
 print_new_install_description() {
 	echo "This installer will:"
@@ -16,7 +17,11 @@ print_new_install_description() {
 }
 
 print_already_installed_description() {
-    echo "MiroExporter $CURRENT_VERSION is already installed."
+    if [ "$UPDATE_AVAILABLE" = true ]; then
+        echo "A newer version of MiroExporter is available: $LATEST_VERSION (currently installed: $CURRENT_VERSION)."
+    else
+        echo "You have the latest version of MiroExporter installed: $CURRENT_VERSION"
+    fi
 }
 
 confirm_proceed() {
@@ -62,8 +67,6 @@ start_install(){
 	run_binary_installer
 }
 
-
-
 start_not_currently_installed_flow(){
     print_new_install_description
     confirm_proceed
@@ -71,12 +74,46 @@ start_not_currently_installed_flow(){
 }
 
 
+show_already_installed_options() {
+        echo ""
+        echo "What do you want to do?:"
+        echo "  1) Reinstall the latest version ($LATEST_VERSION)"
+        echo "  2) Uninstall the currently installed version ($CURRENT_VERSION)"
+        echo "  3) Quit and keep the currently installed version"
+        printf "Choose an option (1/2/3): "
+        read option
+
+        case "$option" in
+            1)
+                start_install
+                ;;
+            2)
+                start_uninstall
+                ;;
+            *)
+                echo "Bye!"
+                ;;
+        esac
+}
+
+start_reinstall(){
+    start_uninstall
+    start_install
+}
+
+start_uninstall(){
+    echo "Uninstalling MiroExporter..."
+    MiroExporter uninstall
+}
+
+
+
 start_already_installed_flow(){
     CURRENT_VERSION=$(retrieve_currently_installed_version)
-
+    UPDATE_AVAILABLE=$(is_newer_version_available)
 
     print_already_installed_description
-
+    show_already_installed_options
 }
 
 retrieve_latest_version() {
@@ -88,13 +125,80 @@ retrieve_currently_installed_version() {
 }
 
 is_newer_version_available() {
-    ## should compare LATEST_VERSION and CURRENT_VERSION, return true if LATEST_VERSION is newer than CURRENT_VERSION, false otherwise.
-    ## version strings follow a semantic versioning pattern are in the format "X.Y.Z", where X, Y, and Z are integers. For example, "1.2.3".
+    ## Compare LATEST_VERSION and CURRENT_VERSION.
+    ## Return 0 (true) if LATEST_VERSION is newer than CURRENT_VERSION, 1 (false) otherwise.
+    ## Version strings are expected in the format "X.Y.Z".
+
+    latest_version=${LATEST_VERSION#v}
+    current_version=${CURRENT_VERSION#v}
+
+    old_ifs=$IFS
+
+    IFS=.
+    set -- $latest_version
+    IFS=$old_ifs
+
+    if [ "$#" -ne 3 ]; then
+        return 1
+    fi
+
+    for latest_part in "$1" "$2" "$3"; do
+        case "$latest_part" in
+            ''|*[!0-9]*)
+                return 1
+                ;;
+        esac
+    done
+
+    latest_major=$1
+    latest_minor=$2
+    latest_patch=$3
+
+    IFS=.
+    set -- $current_version
+    IFS=$old_ifs
+
+    if [ "$#" -ne 3 ]; then
+        return 0
+    fi
+
+    for current_part in "$1" "$2" "$3"; do
+        case "$current_part" in
+            ''|*[!0-9]*)
+                return 0
+                ;;
+        esac
+    done
+
+    current_major=$1
+    current_minor=$2
+    current_patch=$3
+
+    if [ "$latest_major" -gt "$current_major" ]; then
+        return 0
+    fi
+
+    if [ "$latest_major" -lt "$current_major" ]; then
+        return 1
+    fi
+
+    if [ "$latest_minor" -gt "$current_minor" ]; then
+        return 0
+    fi
+
+    if [ "$latest_minor" -lt "$current_minor" ]; then
+        return 1
+    fi
+
+    if [ "$latest_patch" -gt "$current_patch" ]; then
+        return 0
+    fi
+
+    return 1
 }
 
 main() {
     LATEST_VERSION=$(retrieve_latest_version)
-#  echo "Latest MiroExporter version: $LATEST_VERSION"
 
     if command -v MiroExporter >/dev/null 2>&1; then
         start_already_installed_flow
