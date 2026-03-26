@@ -2,6 +2,7 @@ package miroexporter.interactive;
 
 import haxe.Json;
 import haxe.io.Path;
+import miroexporter.AppPaths;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -19,7 +20,8 @@ class InteractiveExportRepository {
         exportDirectoryPaths = [];
         exportRecords = [];
 
-        collectExportDirectoryPaths(Path.normalize(Sys.getCwd()), exportDirectoryPaths);
+        AppPaths.ensureApplicationDataDirectoryExists();
+        collectExportDirectoryPaths(AppPaths.getApplicationDataDirectoryPath(), exportDirectoryPaths);
 
         for (exportDirectoryPath in exportDirectoryPaths) {
             exportRecords.push(buildExportRecord(exportDirectoryPath));
@@ -38,7 +40,7 @@ class InteractiveExportRepository {
             return "";
         }
 
-        normalizedWorkspacePath = Path.normalize(Sys.getCwd());
+        normalizedWorkspacePath = AppPaths.getApplicationDataDirectoryPath();
         normalizedExportDirectoryPath = Path.normalize(Path.join([normalizedWorkspacePath, exportKey]));
 
         if (!isPathWithinRoot(normalizedExportDirectoryPath, normalizedWorkspacePath)) {
@@ -56,7 +58,7 @@ class InteractiveExportRepository {
         var normalizedExportDirectoryPath:String;
         var normalizedWorkspacePath:String;
 
-        normalizedWorkspacePath = Path.addTrailingSlash(Path.normalize(Sys.getCwd()));
+        normalizedWorkspacePath = Path.addTrailingSlash(AppPaths.getApplicationDataDirectoryPath());
         normalizedExportDirectoryPath = Path.normalize(exportDirectoryPath);
 
         if (StringTools.startsWith(normalizedExportDirectoryPath, normalizedWorkspacePath)) {

@@ -3,6 +3,7 @@ package miroexporter.http.routes;
 import haxe.Json;
 import haxe.crypto.Base64;
 import haxe.io.Path;
+import miroexporter.AppPaths;
 import miroexporter.exporter.ExportPaths;
 import miroexporter.exporter.Exporter;
 import miroexporter.http.Request;
@@ -10,7 +11,6 @@ import miroexporter.http.RestDataObject;
 import miroexporter.http.Route;
 import miroexporter.interactive.InteractiveExportRepository;
 import miroexporter.interactive.InteractiveExportState;
-import sys.FileSystem;
 import sys.io.File;
 
 class UploadRoute extends Route {
@@ -97,17 +97,14 @@ class UploadRoute extends Route {
     }
 
     private function getUploadDirectoryPath():String {
-        return Path.join([Sys.getCwd(), "interactive_uploads"]);
+        return AppPaths.getInteractiveUploadsDirectoryPath();
     }
 
     private function ensureUploadDirectoryExists():Void {
         var uploadDirectoryPath:String;
 
+        AppPaths.ensureInteractiveUploadsDirectoryExists();
         uploadDirectoryPath = getUploadDirectoryPath();
-
-        if (!FileSystem.exists(uploadDirectoryPath)) {
-            FileSystem.createDirectory(uploadDirectoryPath);
-            USER_MESSAGE_INFO("Created interactive upload directory: " + uploadDirectoryPath);
-        }
+        USER_MESSAGE_INFO("Using interactive upload directory: " + uploadDirectoryPath);
     }
 }

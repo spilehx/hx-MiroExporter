@@ -32,7 +32,7 @@ jobs:
         run: |
           haxelib install hxcpp --quiet
           haxelib install hx_webserver --quiet
-          haxelib git hx-logging-manager https://github.com/spilehx/hx-logging-manager.git
+          haxelib git hx-logging-manager https://github.com/spilehx/hx-logging-manager
 
       - name: Build project
         run: haxe build.hxml
