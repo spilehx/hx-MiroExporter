@@ -35,6 +35,8 @@ class MiroExporterApp {
 				runInteractive();
 			case "install":
 				runInstall();
+			case "uninstall":
+				runUninstall();
 			case "version":
 				USER_MESSAGE("MiroExporter " + VersionInfo.APPLICATION_VERSION, true);
 			default:
@@ -107,6 +109,32 @@ class MiroExporterApp {
 		}
 
 		USER_MESSAGE_INFO("Installation complete. You can now run: MiroExporter");
+	}
+
+	private function runUninstall():Void {
+		var uninstallExitCode:Int;
+
+		if (Sys.systemName() != "Linux") {
+			USER_MESSAGE_ERROR("The uninstall command is currently only supported on Ubuntu/Linux.");
+			Sys.exit(1);
+		}
+
+		if (!isInstalled()) {
+			USER_MESSAGE_INFO("MiroExporter is not currently installed.");
+			return;
+		}
+
+		USER_MESSAGE_INFO("Uninstalling MiroExporter from the system.");
+		USER_MESSAGE_INFO("You may be prompted by sudo for your password.");
+
+		uninstallExitCode = uninstallInstalledFiles();
+
+		if (uninstallExitCode != 0) {
+			USER_MESSAGE_ERROR("Uninstall failed with exit code " + uninstallExitCode);
+			Sys.exit(uninstallExitCode);
+		}
+
+		USER_MESSAGE_INFO("Uninstall complete.");
 	}
 
 	private function runExtract(args:Array<String>):Void {
@@ -222,6 +250,22 @@ class MiroExporterApp {
 			+ "Categories=Utility;\n";
 	}
 
+	private function uninstallInstalledFiles():Int {
+		return Sys.command("sudo", [
+			"rm",
+			"-f",
+			INSTALLED_BINARY_PATH,
+			INSTALLED_DESKTOP_ENTRY_PATH,
+			INSTALLED_ICON_PATH
+		]);
+	}
+
+	private function isInstalled():Bool {
+		return FileSystem.exists(INSTALLED_BINARY_PATH)
+			|| FileSystem.exists(INSTALLED_DESKTOP_ENTRY_PATH)
+			|| FileSystem.exists(INSTALLED_ICON_PATH);
+	}
+
 	private function wantsHelp(arg:String):Bool {
 		return arg == "help" || arg == "--help" || arg == "-h";
 	}
@@ -235,12 +279,14 @@ class MiroExporterApp {
 		USER_MESSAGE("  extract <path-to-file.rtb>   Extract and parse an RTB file");
 		USER_MESSAGE("  interactive                  Start the interactive mode");
 		USER_MESSAGE("  install                      Install the app globally on Ubuntu/Linux");
+		USER_MESSAGE("  uninstall                    Remove the installed app and menu entry");
 		USER_MESSAGE("  version                      Print the application version");
 		USER_MESSAGE("  help                         Show this message");
 		USER_MESSAGE("");
 		USER_MESSAGE_INFO("Examples:");
 		USER_MESSAGE("  MiroExporter extract ./board.rtb");
 		USER_MESSAGE("  MiroExporter install");
+		USER_MESSAGE("  MiroExporter uninstall");
 		USER_MESSAGE("  MiroExporter version");
 	}
 }
