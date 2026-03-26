@@ -43,7 +43,7 @@ For example:
 ## Quick install
 
 ```bash
-tmp="$(mktemp)" && curl -L https://github.com/spilehx/hx-MiroExporter/releases/latest/download/MiroExporter -o "$tmp" && chmod +x "$tmp" && "$tmp" install && rm -f "$tmp"
+tmpdir="$(mktemp -d)" && (cd "$tmpdir" && curl -L https://github.com/spilehx/hx-MiroExporter/releases/latest/download/MiroExporter -o ./MiroExporter && chmod +x ./MiroExporter && ./MiroExporter install); exit_code=$?; rm -rf "$tmpdir"; exit $exit_code
 ```
 
-This downloads the latest release binary with `curl`, makes it executable, runs the built-in `install` command to install `MiroExporter` globally, and then removes the temporary downloaded file.
+This downloads the latest release binary with `curl`, makes it executable, runs `./MiroExporter install`, and always removes the temporary download directory afterwards while preserving the install command's exit code.
