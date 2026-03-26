@@ -32,7 +32,7 @@ class MiroExporterApp {
 			case "install":
 				runInstall();
 			case "version":
-				USER_MESSAGE("MiroExporter 0.1.0", true);
+				USER_MESSAGE("MiroExporter " + VersionInfo.APPLICATION_VERSION, true);
 			default:
 				USER_MESSAGE_ERROR("Unknown command: " + args[0]);
 				USER_MESSAGE("");

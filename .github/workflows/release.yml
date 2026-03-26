@@ -35,7 +35,7 @@ jobs:
           haxelib git hx-logging-manager https://github.com/spilehx/hx-logging-manager
 
       - name: Build project
-        run: haxe build.hxml
+        run: haxe -D app_version=${{ inputs.tag_name }} build.hxml
 
       - name: Verify release binary
         run: test -f ./bin/MiroExporter
