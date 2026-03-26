@@ -317,10 +317,12 @@ class IndexRoute extends Route {
         var boardInfo:Dynamic;
         var exportKey:String;
         var fileRoutePrefix:String;
+        var openResourcesFolderUrl:String;
         var resourceManifest:Dynamic;
 
         exportKey = InteractiveExportRepository.getExportKey(exportedDirectoryPath);
         fileRoutePrefix = "/file?export=" + StringTools.urlEncode(exportKey) + "&path=";
+        openResourcesFolderUrl = "/open-resources-folder?export=" + StringTools.urlEncode(exportKey);
         boardInfo = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "board-info.json"])));
         resourceManifest = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "resource-manifest.json"])));
 
@@ -330,7 +332,8 @@ class IndexRoute extends Route {
             fileRoutePrefix + StringTools.urlEncode("board-info.json"),
             fileRoutePrefix + StringTools.urlEncode("resource-manifest.json"),
             fileRoutePrefix,
-            true
+            true,
+            openResourcesFolderUrl
         );
     }
 

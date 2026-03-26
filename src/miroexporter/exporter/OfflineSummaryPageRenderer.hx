@@ -4,13 +4,15 @@ class OfflineSummaryPageRenderer {
     public function new() {
     }
 
-    public function render(boardInfo:Dynamic, resourceManifest:Dynamic, boardInfoUrl:String, resourceManifestUrl:String, resourceUrlPrefix:String, encodeResourcePaths:Bool):String {
+    public function render(boardInfo:Dynamic, resourceManifest:Dynamic, boardInfoUrl:String, resourceManifestUrl:String, resourceUrlPrefix:String, encodeResourcePaths:Bool, ?openResourcesFolderUrl:String):String {
         var boardDescription:String;
         var boardTitle:String;
+        var resourcesHeaderActionsMarkup:String;
         var resourceCardsMarkup:String;
 
         boardTitle = htmlEscape(Std.string(boardInfo.board.name));
         boardDescription = htmlEscape(Std.string(boardInfo.board.description));
+        resourcesHeaderActionsMarkup = buildResourcesHeaderActionsMarkup(openResourcesFolderUrl);
         resourceCardsMarkup = buildResourceCardsMarkup(resourceManifest.resources, resourceUrlPrefix, encodeResourcePaths);
 
         return '<!DOCTYPE html>\n'
@@ -60,12 +62,16 @@ class OfflineSummaryPageRenderer {
             + '      </div>\n'
             + '    </section>\n'
             + '    <section class="section">\n'
-            + '      <h2>Resources</h2>\n'
+            + '      <div class="section-header">\n'
+            + '        <h2>Resources</h2>\n'
+            + resourcesHeaderActionsMarkup
+            + '      </div>\n'
             + '      <div class="resource-grid">\n'
             + resourceCardsMarkup
             + '      </div>\n'
             + '    </section>\n'
             + '  </main>\n'
+            + buildClientScript(openResourcesFolderUrl)
             + '</body>\n'
             + '</html>\n';
     }
@@ -108,6 +114,16 @@ class OfflineSummaryPageRenderer {
         }
 
         return markup;
+    }
+
+    private function buildResourcesHeaderActionsMarkup(openResourcesFolderUrl:String):String {
+        if (openResourcesFolderUrl == null || openResourcesFolderUrl == "") {
+            return "";
+        }
+
+        return '        <div class="section-actions">\n'
+            + '          <button id="showAllResourcesButton" type="button" class="action-button" data-open-folder-url="' + htmlEscape(openResourcesFolderUrl) + '">Show all</button>\n'
+            + '        </div>\n';
     }
 
     private function buildResourceCardMarkup(resource:Dynamic, resourceUrlPrefix:String, encodeResourcePaths:Bool):String {
@@ -199,6 +215,36 @@ class OfflineSummaryPageRenderer {
         return StringTools.htmlEscape(value, true);
     }
 
+    private function buildClientScript(openResourcesFolderUrl:String):String {
+        if (openResourcesFolderUrl == null || openResourcesFolderUrl == "") {
+            return "";
+        }
+
+        return '  <script>\n'
+            + '    const showAllResourcesButton = document.getElementById("showAllResourcesButton");\n'
+            + '    if (showAllResourcesButton) {\n'
+            + '      showAllResourcesButton.addEventListener("click", async () => {\n'
+            + '        const openFolderUrl = showAllResourcesButton.dataset.openFolderUrl || "";\n'
+            + '        if (!openFolderUrl) {\n'
+            + '          return;\n'
+            + '        }\n'
+            + '        showAllResourcesButton.disabled = true;\n'
+            + '        try {\n'
+            + '          const response = await fetch(openFolderUrl, { method: "POST" });\n'
+            + '          if (!response.ok) {\n'
+            + '            const errorText = await response.text();\n'
+            + '            throw new Error(errorText || "Failed to open the resources folder.");\n'
+            + '          }\n'
+            + '        } catch (error) {\n'
+            + '          window.alert(error.message || "Failed to open the resources folder.");\n'
+            + '        } finally {\n'
+            + '          showAllResourcesButton.disabled = false;\n'
+            + '        }\n'
+            + '      });\n'
+            + '    }\n'
+            + '  </script>\n';
+    }
+
     private function buildStyles():String {
         return '    :root {\n'
             + '      color-scheme: light;\n'
@@ -285,6 +331,29 @@ class OfflineSummaryPageRenderer {
             + '    .section {\n'
             + '      padding: 24px;\n'
             + '      margin-bottom: 24px;\n'
+            + '    }\n'
+            + '    .section-header {\n'
+            + '      display: flex;\n'
+            + '      align-items: center;\n'
+            + '      justify-content: space-between;\n'
+            + '      gap: 16px;\n'
+            + '      margin-bottom: 18px;\n'
+            + '    }\n'
+            + '    .section-actions {\n'
+            + '      display: flex;\n'
+            + '      gap: 12px;\n'
+            + '    }\n'
+            + '    .action-button {\n'
+            + '      appearance: none;\n'
+            + '      border: 1px solid var(--line);\n'
+            + '      border-radius: 999px;\n'
+            + '      background: #fff6f1;\n'
+            + '      color: var(--accent);\n'
+            + '      padding: 10px 14px;\n'
+            + '      font-family: inherit;\n'
+            + '      font-size: 0.95rem;\n'
+            + '      font-weight: 700;\n'
+            + '      cursor: pointer;\n'
             + '    }\n'
             + '    .stats {\n'
             + '      display: grid;\n'
@@ -387,6 +456,10 @@ class OfflineSummaryPageRenderer {
             + '      .actions {\n'
             + '        flex-direction: row;\n'
             + '        flex-wrap: wrap;\n'
+            + '      }\n'
+            + '      .section-header {\n'
+            + '        flex-direction: column;\n'
+            + '        align-items: flex-start;\n'
             + '      }\n'
             + '    }\n';
     }

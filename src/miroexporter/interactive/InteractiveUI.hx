@@ -4,6 +4,7 @@ import miroexporter.http.HTTPServer;
 import miroexporter.http.routes.DeleteExportRoute;
 import miroexporter.http.routes.FileRoute;
 import miroexporter.http.routes.IndexRoute;
+import miroexporter.http.routes.OpenResourcesFolderRoute;
 import miroexporter.http.routes.UploadRoute;
 import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
 import sys.thread.Thread;
@@ -30,6 +31,7 @@ class InteractiveUI {
             httpServer.addRoute(IndexRoute);
             httpServer.addRoute(UploadRoute);
             httpServer.addRoute(DeleteExportRoute);
+            httpServer.addRoute(OpenResourcesFolderRoute);
             httpServer.addRoute(FileRoute);
             httpServer.startServer(DEFAULT_HTTP_PORT);
             openBrowserWhenServerIsReady(serverUrl);
