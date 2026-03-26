@@ -1,5 +1,8 @@
 package miroexporter;
 
+import miroexporter.exporter.Exporter;
+import sys.FileSystem;
+
 class MiroExporterApp {
 	public function new() {
 		spilehx.logger.GlobalLoggingSettings.settings.verbose = true;
@@ -18,17 +21,41 @@ class MiroExporterApp {
 		}
 
 		switch (args[0]) {
-			case "hello":
-				var name = args.length > 1 ? args[1] : "world";
-				Sys.println("Hello, " + name + "!");
+			case "extract":
+				runExtract(args);
 			case "version":
-				Sys.println("MiroExporter 0.1.0");
+				USER_MESSAGE("MiroExporter 0.1.0", true);
 			default:
-				Sys.println("Unknown command: " + args[0]);
-				Sys.println("");
+				USER_MESSAGE_ERROR("Unknown command: " + args[0]);
+				USER_MESSAGE("");
 				printHelp();
 				Sys.exit(1);
 		}
+	}
+
+	private function runExtract(args:Array<String>):Void {
+		if (args.length < 2) {
+			USER_MESSAGE_ERROR("No .rtb file path provided for extraction.");
+			USER_MESSAGE("");
+			USER_MESSAGE("Usage: MiroExporter extract <path-to-file.rtb>", true);
+			Sys.exit(1);
+		}
+
+		var path = args[1];
+
+		if (!StringTools.endsWith(path.toLowerCase(), ".rtb")) {
+			USER_MESSAGE_ERROR("Expected a file with .rtb extension: " + path);
+			Sys.exit(1);
+		}
+
+		if (!FileSystem.exists(path)) {
+			USER_MESSAGE_ERROR("File not found: " + path);
+			Sys.exit(1);
+		}
+
+		// USER_MESSAGE_INFO("Extracting RTB file: " + path);
+		var exporter = new Exporter();
+		exporter.export(path);
 	}
 
 	private function wantsHelp(arg:String):Bool {
@@ -36,19 +63,17 @@ class MiroExporterApp {
 	}
 
 	private function printHelp():Void {
-		Sys.println("Haxe C++ CLI Boilerplate");
-		Sys.println("");
-		Sys.println("Usage:");
-		Sys.println("  MiroExporter <command> [arguments]");
-		Sys.println("");
-		Sys.println("Commands:");
-		Sys.println("  hello [name]   Print a greeting");
-		Sys.println("  version        Print the application version");
-		Sys.println("  help           Show this message");
-		Sys.println("");
-		Sys.println("Examples:");
-		Sys.println("  MiroExporter hello");
-		Sys.println("  MiroExporter hello Jonny");
-		Sys.println("  MiroExporter version");
+	
+		USER_MESSAGE_INFO("Usage:");
+		USER_MESSAGE("  MiroExporter <command> [arguments]");
+		USER_MESSAGE("");
+		USER_MESSAGE_INFO("Commands:");
+		USER_MESSAGE("  extract <path-to-file.rtb>   Extract and parse an RTB file");
+		USER_MESSAGE("  version                      Print the application version");
+		USER_MESSAGE("  help                         Show this message");
+		USER_MESSAGE("");
+		USER_MESSAGE_INFO("Examples:");
+		USER_MESSAGE("  MiroExporter extract ./board.rtb");
+		USER_MESSAGE("  MiroExporter version");
 	}
 }
