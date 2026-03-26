@@ -5,7 +5,6 @@ import haxe.crypto.Base64;
 import haxe.io.Path;
 import miroexporter.exporter.ExportPaths;
 import miroexporter.exporter.Exporter;
-import miroexporter.exporter.OfflineSummaryPageRenderer;
 import miroexporter.http.Request;
 import miroexporter.http.RestDataObject;
 import miroexporter.http.Route;
@@ -15,11 +14,8 @@ import sys.FileSystem;
 import sys.io.File;
 
 class UploadRoute extends Route {
-    private var summaryPageRenderer:OfflineSummaryPageRenderer;
-
     public function new() {
         super("/upload", new RestDataObject(), "POST");
-        summaryPageRenderer = new OfflineSummaryPageRenderer();
     }
 
     override public function handle(request:Request) {
@@ -78,35 +74,13 @@ class UploadRoute extends Route {
         exportedDirectoryPath = ExportPaths.getExportedDirectoryPath(exportOutputDirectoryPath);
         InteractiveExportState.setLatestExportedDirectoryPath(exportedDirectoryPath);
         USER_MESSAGE_INFO("Interactive export completed. Exported directory: " + exportedDirectoryPath);
-
-        try {
-            USER_MESSAGE_INFO("Rendering interactive summary page for: " + exportedDirectoryPath);
-            request.replyWithHTML(buildSummaryPage(exportedDirectoryPath));
-        } catch (error:Dynamic) {
-            USER_MESSAGE_ERROR("Failed to build interactive summary page: " + exportedDirectoryPath + " | " + Std.string(error));
-            request.reply("Export completed, but the summary page could not be generated.", 500);
-        }
-    }
-
-    private function buildSummaryPage(exportedDirectoryPath:String):String {
-        var boardInfo:Dynamic;
         var exportKey:String;
-        var fileRoutePrefix:String;
-        var resourceManifest:Dynamic;
 
         exportKey = InteractiveExportRepository.getExportKey(exportedDirectoryPath);
-        fileRoutePrefix = "/file?export=" + StringTools.urlEncode(exportKey) + "&path=";
-        boardInfo = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "board-info.json"])));
-        resourceManifest = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "resource-manifest.json"])));
-
-        return summaryPageRenderer.render(
-            boardInfo,
-            resourceManifest,
-            fileRoutePrefix + StringTools.urlEncode("board-info.json"),
-            fileRoutePrefix + StringTools.urlEncode("resource-manifest.json"),
-            fileRoutePrefix,
-            true
-        );
+        USER_MESSAGE_INFO("Returning redirect URL for export: " + exportKey);
+        request.replyWithJSON({
+            redirectUrl: "/?export=" + StringTools.urlEncode(exportKey)
+        });
     }
 
     private function sanitizeUploadedFileName(uploadedFileName:String):String {
