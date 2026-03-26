@@ -54,9 +54,11 @@ class Request {
 			for (param in params) {
 				var parmaComponents:Array<String> = param.split("=");
 				if (parmaComponents.length == 2) {
-					var key:String = parmaComponents[0];
+					var paramKey:String = parmaComponents[0];
 					var value:String = parmaComponents[1];
-					return value;
+					if (paramKey == key) {
+						return value;
+					}
 				}
 			}
 		}
@@ -66,6 +68,10 @@ class Request {
 
 	public function close():Void {
 		this.httpRequest.close();
+	}
+
+	public function getHeaderValue(header:String):String {
+		return this.httpRequest.getHeaderValue(header);
 	}
 
 	
