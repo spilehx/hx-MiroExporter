@@ -8,6 +8,7 @@ import miroexporter.http.RestDataObject;
 import miroexporter.http.Route;
 import miroexporter.interactive.InteractiveExportRepository;
 import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
+import miroexporter.interactive.InteractiveSessionClientScriptBuilder;
 import sys.io.File;
 
 class IndexRoute extends Route {
@@ -277,6 +278,7 @@ class IndexRoute extends Route {
             + '      });\n'
             + '    }\n'
             + '  </script>\n'
+            + InteractiveSessionClientScriptBuilder.buildScriptMarkup()
             + '</body>\n'
             + '</html>\n';
     }
@@ -333,7 +335,8 @@ class IndexRoute extends Route {
             fileRoutePrefix + StringTools.urlEncode("resource-manifest.json"),
             fileRoutePrefix,
             true,
-            openResourcesFolderUrl
+            openResourcesFolderUrl,
+            InteractiveSessionClientScriptBuilder.buildScriptMarkup()
         );
     }
 

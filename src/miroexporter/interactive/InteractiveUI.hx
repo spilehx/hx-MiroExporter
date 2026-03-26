@@ -5,6 +5,8 @@ import miroexporter.http.routes.DeleteExportRoute;
 import miroexporter.http.routes.FileRoute;
 import miroexporter.http.routes.IndexRoute;
 import miroexporter.http.routes.OpenResourcesFolderRoute;
+import miroexporter.http.routes.SessionDisconnectRoute;
+import miroexporter.http.routes.SessionHeartbeatRoute;
 import miroexporter.http.routes.UploadRoute;
 import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
 import sys.net.Host;
@@ -35,11 +37,14 @@ class InteractiveUI {
         Thread.runWithEventLoop(function() {
             var httpServer:HTTPServer;
 
+            InteractiveSessionTracker.startWatchdog();
             httpServer = HTTPServer.instance;
             httpServer.addRoute(IndexRoute);
             httpServer.addRoute(UploadRoute);
             httpServer.addRoute(DeleteExportRoute);
             httpServer.addRoute(OpenResourcesFolderRoute);
+            httpServer.addRoute(SessionHeartbeatRoute);
+            httpServer.addRoute(SessionDisconnectRoute);
             httpServer.addRoute(FileRoute);
             httpServer.startServer(DEFAULT_HTTP_PORT);
             openBrowserWhenServerIsReady(serverUrl);

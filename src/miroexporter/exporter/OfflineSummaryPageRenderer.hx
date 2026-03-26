@@ -4,7 +4,7 @@ class OfflineSummaryPageRenderer {
     public function new() {
     }
 
-    public function render(boardInfo:Dynamic, resourceManifest:Dynamic, boardInfoUrl:String, resourceManifestUrl:String, resourceUrlPrefix:String, encodeResourcePaths:Bool, ?openResourcesFolderUrl:String):String {
+    public function render(boardInfo:Dynamic, resourceManifest:Dynamic, boardInfoUrl:String, resourceManifestUrl:String, resourceUrlPrefix:String, encodeResourcePaths:Bool, ?openResourcesFolderUrl:String, ?extraScriptMarkup:String):String {
         var boardDescription:String;
         var boardTitle:String;
         var resourcesHeaderActionsMarkup:String;
@@ -72,6 +72,7 @@ class OfflineSummaryPageRenderer {
             + '    </section>\n'
             + '  </main>\n'
             + buildClientScript(openResourcesFolderUrl)
+            + (extraScriptMarkup == null ? "" : extraScriptMarkup)
             + '</body>\n'
             + '</html>\n';
     }
