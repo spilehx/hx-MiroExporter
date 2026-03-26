@@ -29,16 +29,21 @@ class UploadRoute extends Route {
         var uploadedFileName:String;
         var uploadedFilePath:String;
 
+        USER_MESSAGE_INFO("Upload request received for /upload");
+
         try {
             requestData = Json.parse(request.postdata);
         } catch (error:Dynamic) {
+            USER_MESSAGE_ERROR("Failed to parse upload request body: " + Std.string(error));
             request.reply("Invalid upload request.", 400);
             return;
         }
 
         uploadedFileName = sanitizeUploadedFileName(Std.string(requestData.fileName));
+        USER_MESSAGE_INFO("Upload request file name: " + uploadedFileName);
 
         if (!StringTools.endsWith(uploadedFileName.toLowerCase(), ".rtb")) {
+            USER_MESSAGE_WARN("Rejected upload because file extension is not .rtb: " + uploadedFileName);
             request.reply("Only .rtb files are supported.", 400);
             return;
         }
@@ -48,16 +53,22 @@ class UploadRoute extends Route {
         try {
             uploadedFileBytes = Base64.decode(Std.string(requestData.base64Data));
         } catch (error:Dynamic) {
+            USER_MESSAGE_ERROR("Failed to decode uploaded RTB file: " + uploadedFileName + " | " + Std.string(error));
             request.reply("Failed to decode uploaded file.", 400);
             return;
         }
 
+        USER_MESSAGE_INFO("Decoded uploaded RTB file bytes: " + uploadedFileBytes.length);
+
         uploadedFilePath = Path.join([getUploadDirectoryPath(), uploadedFileName]);
         File.saveBytes(uploadedFilePath, uploadedFileBytes);
+        USER_MESSAGE_INFO("Saved uploaded RTB file to: " + uploadedFilePath);
 
         try {
+            USER_MESSAGE_INFO("Starting export for uploaded RTB file: " + uploadedFilePath);
             new Exporter().export(uploadedFilePath);
         } catch (error:Dynamic) {
+            USER_MESSAGE_ERROR("Failed to process uploaded RTB file: " + uploadedFilePath + " | " + Std.string(error));
             request.reply("Failed to process uploaded RTB file.", 500);
             return;
         }
@@ -65,7 +76,15 @@ class UploadRoute extends Route {
         exportOutputDirectoryPath = ExportPaths.getOutputDirectoryPath(uploadedFilePath);
         exportedDirectoryPath = ExportPaths.getExportedDirectoryPath(exportOutputDirectoryPath);
         InteractiveExportState.setLatestExportedDirectoryPath(exportedDirectoryPath);
-        request.replyWithHTML(buildSummaryPage(exportedDirectoryPath));
+        USER_MESSAGE_INFO("Interactive export completed. Exported directory: " + exportedDirectoryPath);
+
+        try {
+            USER_MESSAGE_INFO("Rendering interactive summary page for: " + exportedDirectoryPath);
+            request.replyWithHTML(buildSummaryPage(exportedDirectoryPath));
+        } catch (error:Dynamic) {
+            USER_MESSAGE_ERROR("Failed to build interactive summary page: " + exportedDirectoryPath + " | " + Std.string(error));
+            request.reply("Export completed, but the summary page could not be generated.", 500);
+        }
     }
 
     private function buildSummaryPage(exportedDirectoryPath:String):String {
@@ -109,6 +128,7 @@ class UploadRoute extends Route {
 
         if (!FileSystem.exists(uploadDirectoryPath)) {
             FileSystem.createDirectory(uploadDirectoryPath);
+            USER_MESSAGE_INFO("Created interactive upload directory: " + uploadDirectoryPath);
         }
     }
 }
