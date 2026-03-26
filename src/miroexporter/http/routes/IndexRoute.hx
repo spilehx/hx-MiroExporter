@@ -1,0 +1,343 @@
+package miroexporter.http.routes;
+
+import haxe.Json;
+import haxe.io.Path;
+import miroexporter.exporter.OfflineSummaryPageRenderer;
+import miroexporter.http.Request;
+import miroexporter.http.RestDataObject;
+import miroexporter.http.Route;
+import miroexporter.interactive.InteractiveExportRepository;
+import miroexporter.interactive.InteractiveExportRepository.InteractiveExportRecord;
+import sys.io.File;
+
+class IndexRoute extends Route {
+    private var summaryPageRenderer:OfflineSummaryPageRenderer;
+
+    public function new() {
+        super("/", new RestDataObject(), "GET");
+        summaryPageRenderer = new OfflineSummaryPageRenderer();
+    }
+
+    override public function handle(request:Request) {
+        var exportDirectoryPath:String;
+        var exportKey:String;
+
+        exportKey = StringTools.urlDecode(request.getUrlParam("export"));
+
+        if (exportKey != "") {
+            exportDirectoryPath = InteractiveExportRepository.resolveExportDirectoryPath(exportKey);
+
+            if (exportDirectoryPath == "") {
+                request.replyWithHTML(buildHtmlPage("The selected export could not be found."));
+                return;
+            }
+
+            request.replyWithHTML(buildSummaryPage(exportDirectoryPath));
+            return;
+        }
+
+        request.replyWithHTML(buildHtmlPage());
+    }
+
+    private function buildHtmlPage(?errorMessage:String):String {
+        var existingExportsMarkup:String;
+
+        existingExportsMarkup = buildExistingExportsMarkup(InteractiveExportRepository.findAvailableExports());
+
+        return '<!DOCTYPE html>\n'
+            + '<html lang="en">\n'
+            + '<head>\n'
+            + '  <meta charset="utf-8">\n'
+            + '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            + '  <title>Miro Exporter</title>\n'
+            + '  <style>\n'
+            + '    body {\n'
+            + '      margin: 0;\n'
+            + '      font-family: Georgia, "Times New Roman", serif;\n'
+            + '      background: radial-gradient(circle at top left, #fff7ed 0, #f4f0e8 45%, #ebe3d5 100%);\n'
+            + '      color: #241d16;\n'
+            + '    }\n'
+            + '    main {\n'
+            + '      max-width: 760px;\n'
+            + '      margin: 56px auto;\n'
+            + '      padding: 0 20px;\n'
+            + '    }\n'
+            + '    .panel {\n'
+            + '      background: #fffdfa;\n'
+            + '      border: 1px solid #d9cfbf;\n'
+            + '      border-radius: 24px;\n'
+            + '      padding: 32px;\n'
+            + '      box-shadow: 0 18px 40px rgba(44, 29, 16, 0.08);\n'
+            + '    }\n'
+            + '    h1 {\n'
+            + '      margin: 0 0 12px;\n'
+            + '      font-size: clamp(2.4rem, 5vw, 4rem);\n'
+            + '      line-height: 1.1;\n'
+            + '    }\n'
+            + '    p {\n'
+            + '      margin: 0 0 16px;\n'
+            + '      line-height: 1.6;\n'
+            + '    }\n'
+            + '    .lead {\n'
+            + '      color: #6a5f52;\n'
+            + '    }\n'
+            + '    button {\n'
+            + '      appearance: none;\n'
+            + '      border: 0;\n'
+            + '      border-radius: 999px;\n'
+            + '      background: #b85c38;\n'
+            + '      color: white;\n'
+            + '      padding: 14px 20px;\n'
+            + '      font-size: 1rem;\n'
+            + '      font-weight: 700;\n'
+            + '      cursor: pointer;\n'
+            + '    }\n'
+            + '    button[hidden] {\n'
+            + '      display: none;\n'
+            + '    }\n'
+            + '    .status {\n'
+            + '      margin-top: 18px;\n'
+            + '      padding: 14px 16px;\n'
+            + '      border: 1px solid #e1d4c5;\n'
+            + '      border-radius: 16px;\n'
+            + '      background: #fdf4ed;\n'
+            + '      display: none;\n'
+            + '    }\n'
+            + '    .status.visible {\n'
+            + '      display: block;\n'
+            + '    }\n'
+            + '    .error {\n'
+            + '      color: #8b2f1d;\n'
+            + '      margin-top: 14px;\n'
+            + '      display: none;\n'
+            + '    }\n'
+            + '    .error.visible {\n'
+            + '      display: block;\n'
+            + '    }\n'
+            + '    .existing-exports {\n'
+            + '      margin-top: 28px;\n'
+            + '      padding-top: 24px;\n'
+            + '      border-top: 1px solid #e1d4c5;\n'
+            + '    }\n'
+            + '    .existing-exports h2 {\n'
+            + '      margin: 0 0 10px;\n'
+            + '      font-size: 1.4rem;\n'
+            + '    }\n'
+            + '    .existing-exports-list {\n'
+            + '      display: grid;\n'
+            + '      gap: 12px;\n'
+            + '      margin-top: 16px;\n'
+            + '    }\n'
+            + '    .existing-export-link {\n'
+            + '      display: block;\n'
+            + '      flex: 1;\n'
+            + '      padding: 16px 18px;\n'
+            + '      border: 1px solid #d9cfbf;\n'
+            + '      border-radius: 18px;\n'
+            + '      background: #fff8f1;\n'
+            + '      color: #241d16;\n'
+            + '      text-decoration: none;\n'
+            + '    }\n'
+            + '    .existing-export-item {\n'
+            + '      display: flex;\n'
+            + '      gap: 12px;\n'
+            + '      align-items: stretch;\n'
+            + '    }\n'
+            + '    .existing-export-link:hover {\n'
+            + '      background: #fff2e6;\n'
+            + '    }\n'
+            + '    .delete-export-button {\n'
+            + '      flex: 0 0 auto;\n'
+            + '      align-self: center;\n'
+            + '      padding: 10px 14px;\n'
+            + '      background: #8b2f1d;\n'
+            + '      font-size: 0.92rem;\n'
+            + '    }\n'
+            + '    .existing-export-name {\n'
+            + '      display: block;\n'
+            + '      font-weight: 700;\n'
+            + '      margin-bottom: 6px;\n'
+            + '    }\n'
+            + '    .existing-export-path {\n'
+            + '      display: block;\n'
+            + '      color: #6a5f52;\n'
+            + '      font-size: 0.95rem;\n'
+            + '      word-break: break-word;\n'
+            + '    }\n'
+            + '  </style>\n'
+            + '</head>\n'
+            + '<body>\n'
+            + '  <main>\n'
+            + '    <section class="panel">\n'
+            + '      <h1>Miro Exporter</h1>\n'
+            + '      <p class="lead">Upload an <code>.rtb</code> file to process it and view the exported offline summary.</p>\n'
+            + '      <input id="rtbFileInput" type="file" accept=".rtb" hidden>\n'
+            + '      <button id="uploadButton" type="button">Upload .rtb file</button>\n'
+            + '      <div id="statusMessage" class="status">Please wait. Uploading and processing the RTB file.</div>\n'
+            + '      <p id="errorMessage" class="error' + (errorMessage != null && errorMessage != "" ? ' visible' : '') + '">' + htmlEscape(errorMessage == null ? "" : errorMessage) + '</p>\n'
+            + existingExportsMarkup
+            + '    </section>\n'
+            + '  </main>\n'
+            + '  <script>\n'
+            + '    const uploadButton = document.getElementById("uploadButton");\n'
+            + '    const fileInput = document.getElementById("rtbFileInput");\n'
+            + '    const statusMessage = document.getElementById("statusMessage");\n'
+            + '    const errorMessage = document.getElementById("errorMessage");\n'
+            + '    const existingExportsList = document.getElementById("existingExportsList");\n'
+            + '    const emptyExportsMessage = document.getElementById("emptyExportsMessage");\n'
+            + '    uploadButton.addEventListener("click", () => {\n'
+            + '      errorMessage.classList.remove("visible");\n'
+            + '      errorMessage.textContent = "";\n'
+            + '      fileInput.click();\n'
+            + '    });\n'
+            + '    document.querySelectorAll(".delete-export-button").forEach((deleteButton) => {\n'
+            + '      deleteButton.addEventListener("click", async () => {\n'
+            + '        const exportKey = deleteButton.dataset.exportKey || "";\n'
+            + '        const exportItem = deleteButton.closest(".existing-export-item");\n'
+            + '        if (!exportKey || !exportItem) {\n'
+            + '          return;\n'
+            + '        }\n'
+            + '        if (!window.confirm("Delete this stored export?")) {\n'
+            + '          return;\n'
+            + '        }\n'
+            + '        deleteButton.disabled = true;\n'
+            + '        try {\n'
+            + '          const response = await fetch("/delete-export", {\n'
+            + '            method: "POST",\n'
+            + '            headers: {\n'
+            + '              "Content-Type": "application/json"\n'
+            + '            },\n'
+            + '            body: JSON.stringify({ exportKey: exportKey })\n'
+            + '          });\n'
+            + '          if (!response.ok) {\n'
+            + '            const errorText = await response.text();\n'
+            + '            throw new Error(errorText || "Delete failed.");\n'
+            + '          }\n'
+            + '          exportItem.remove();\n'
+            + '          if (existingExportsList && existingExportsList.children.length === 0 && emptyExportsMessage) {\n'
+            + '            emptyExportsMessage.hidden = false;\n'
+            + '          }\n'
+            + '        } catch (error) {\n'
+            + '          deleteButton.disabled = false;\n'
+            + '          errorMessage.textContent = error.message || "Delete failed.";\n'
+            + '          errorMessage.classList.add("visible");\n'
+            + '        }\n'
+            + '      });\n'
+            + '    });\n'
+            + '    fileInput.addEventListener("change", async () => {\n'
+            + '      const file = fileInput.files && fileInput.files[0];\n'
+            + '      if (!file) {\n'
+            + '        return;\n'
+            + '      }\n'
+            + '      if (!file.name.toLowerCase().endsWith(".rtb")) {\n'
+            + '        errorMessage.textContent = "Please select a file with a .rtb extension.";\n'
+            + '        errorMessage.classList.add("visible");\n'
+            + '        return;\n'
+            + '      }\n'
+            + '      uploadButton.hidden = true;\n'
+            + '      statusMessage.classList.add("visible");\n'
+            + '      try {\n'
+            + '        const base64Data = await readFileAsBase64(file);\n'
+            + '        const response = await fetch("/upload", {\n'
+            + '          method: "POST",\n'
+            + '          headers: {\n'
+            + '            "Content-Type": "application/json"\n'
+            + '          },\n'
+            + '          body: JSON.stringify({\n'
+            + '            fileName: file.name,\n'
+            + '            base64Data: base64Data\n'
+            + '          })\n'
+            + '        });\n'
+            + '        if (!response.ok) {\n'
+            + '          const errorText = await response.text();\n'
+            + '          throw new Error(errorText || "Upload failed.");\n'
+            + '        }\n'
+            + '        const responseData = await response.json();\n'
+            + '        if (!responseData || !responseData.redirectUrl) {\n'
+            + '          throw new Error("Upload completed but no redirect URL was returned.");\n'
+            + '        }\n'
+            + '        window.location.assign(responseData.redirectUrl);\n'
+            + '      } catch (error) {\n'
+            + '        statusMessage.classList.remove("visible");\n'
+            + '        uploadButton.hidden = false;\n'
+            + '        errorMessage.textContent = error.message || "Upload failed.";\n'
+            + '        errorMessage.classList.add("visible");\n'
+            + '      }\n'
+            + '    });\n'
+            + '    function readFileAsBase64(file) {\n'
+            + '      return new Promise((resolve, reject) => {\n'
+            + '        const reader = new FileReader();\n'
+            + '        reader.onerror = () => reject(new Error("Could not read the selected file."));\n'
+            + '        reader.onload = () => {\n'
+            + '          const result = String(reader.result || "");\n'
+            + '          const base64Data = result.split(",")[1] || "";\n'
+            + '          resolve(base64Data);\n'
+            + '        };\n'
+            + '        reader.readAsDataURL(file);\n'
+            + '      });\n'
+            + '    }\n'
+            + '  </script>\n'
+            + '</body>\n'
+            + '</html>\n';
+    }
+
+    private function buildExistingExportsMarkup(existingExports:Array<InteractiveExportRecord>):String {
+        var markup:String;
+
+        markup = '      <section class="existing-exports">\n'
+            + '        <h2>Existing exports</h2>\n'
+            + '        <p>Open an export that has already been processed in this workspace.</p>\n';
+
+        if (existingExports.length == 0) {
+            return markup
+                + '        <p id="emptyExportsMessage">No exported RTB summaries were found yet.</p>\n'
+                + '      </section>\n';
+        }
+
+        markup += '        <p id="emptyExportsMessage" hidden>No exported RTB summaries were found yet.</p>\n'
+            + '        <div id="existingExportsList" class="existing-exports-list">\n';
+
+        for (existingExport in existingExports) {
+            markup += '          <div class="existing-export-item">\n'
+                + '            <a class="existing-export-link" href="/?export=' + StringTools.urlEncode(existingExport.exportKey) + '">\n'
+                + '              <span class="existing-export-name">' + htmlEscape(existingExport.boardName) + '</span>\n'
+                + '              <span class="existing-export-path">' + htmlEscape(existingExport.exportKey) + '</span>\n'
+                + '            </a>\n'
+                + '            <button type="button" class="delete-export-button" data-export-key="' + htmlEscape(existingExport.exportKey) + '">Delete</button>\n'
+                + '          </div>\n';
+        }
+
+        markup += '        </div>\n'
+            + '      </section>\n';
+
+        return markup;
+    }
+
+    private function buildSummaryPage(exportedDirectoryPath:String):String {
+        var boardInfo:Dynamic;
+        var exportKey:String;
+        var fileRoutePrefix:String;
+        var openResourcesFolderUrl:String;
+        var resourceManifest:Dynamic;
+
+        exportKey = InteractiveExportRepository.getExportKey(exportedDirectoryPath);
+        fileRoutePrefix = "/file?export=" + StringTools.urlEncode(exportKey) + "&path=";
+        openResourcesFolderUrl = "/open-resources-folder?export=" + StringTools.urlEncode(exportKey);
+        boardInfo = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "board-info.json"])));
+        resourceManifest = Json.parse(File.getContent(Path.join([exportedDirectoryPath, "resource-manifest.json"])));
+
+        return summaryPageRenderer.render(
+            boardInfo,
+            resourceManifest,
+            fileRoutePrefix + StringTools.urlEncode("board-info.json"),
+            fileRoutePrefix + StringTools.urlEncode("resource-manifest.json"),
+            fileRoutePrefix,
+            true,
+            openResourcesFolderUrl
+        );
+    }
+
+    private function htmlEscape(value:String):String {
+        return StringTools.htmlEscape(value == null ? "" : value, true);
+    }
+}

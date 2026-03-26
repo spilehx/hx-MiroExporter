@@ -1,5 +1,5 @@
 ## Build cpp server 
--lib hx-logging-manager
+-lib hx-logging-manager hx_webserver
 -cp src
 -dce std
 -main MiroExporter

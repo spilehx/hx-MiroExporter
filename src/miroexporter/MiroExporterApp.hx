@@ -1,5 +1,6 @@
 package miroexporter;
 
+import miroexporter.interactive.InteractiveUI;
 import miroexporter.exporter.Exporter;
 import sys.FileSystem;
 
@@ -23,6 +24,8 @@ class MiroExporterApp {
 		switch (args[0]) {
 			case "extract":
 				runExtract(args);
+			case "interactive":
+				runInteractive();
 			case "version":
 				USER_MESSAGE("MiroExporter 0.1.0", true);
 			default:
@@ -31,6 +34,11 @@ class MiroExporterApp {
 				printHelp();
 				Sys.exit(1);
 		}
+	}
+
+	private function runInteractive(){
+		USER_MESSAGE("Running interactive");
+		new InteractiveUI().startHttpServer();
 	}
 
 	private function runExtract(args:Array<String>):Void {
@@ -69,6 +77,7 @@ class MiroExporterApp {
 		USER_MESSAGE("");
 		USER_MESSAGE_INFO("Commands:");
 		USER_MESSAGE("  extract <path-to-file.rtb>   Extract and parse an RTB file");
+		USER_MESSAGE("  interactive                  Start the interactive mode");
 		USER_MESSAGE("  version                      Print the application version");
 		USER_MESSAGE("  help                         Show this message");
 		USER_MESSAGE("");
