@@ -13,18 +13,25 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 print_new_install_description() {
-	echo "This installer will:"
-	echo "- download the latest MiroExporter release from GitHub"
-	echo "- make the downloaded binary executable"
-	echo "- run 'MiroExporter install', which installs it system-wide"
-	echo "- remove the temporary download directory afterwards"
+	echo_info "This installer will:"
+	echo_info "- download the latest MiroExporter release from GitHub"
+	echo_info "- make the downloaded binary executable"
+	echo_info "- run 'MiroExporter install', which installs it system-wide"
+	echo_info "- remove the temporary download directory afterwards"
+}
+
+print_your_files_will_be_safe_warning() {
+    echo_warn "Your exported project files are safe"
+    echo_warn "They will still be available in ~/MiroExporter"
 }
 
 print_already_installed_description() {
     if [ "$UPDATE_AVAILABLE" = true ]; then
-        echo "A newer version of MiroExporter is available: $LATEST_VERSION (currently installed: $CURRENT_VERSION)."
+        echo_info "A newer version of MiroExporter is available"
+        echo_info "New: $LATEST_VERSION"
+        echo_info "Current: $CURRENT_VERSION"
     else
-        echo "You have the latest version of MiroExporter installed: $CURRENT_VERSION"
+        echo_info "You have the latest version of MiroExporter installed: $CURRENT_VERSION"
     fi
 }
 
@@ -33,7 +40,7 @@ confirm_proceed() {
 	read proceed
 
 	if [ "$proceed" != "y" ]; then
-		echo "Cancelled."
+		echo_info "Cancelled."
 		exit 0
 	fi
 }
@@ -65,7 +72,7 @@ run_binary_installer() {
 }
 
 start_install(){
-    echo "Installing MiroExporter..."
+    echo_info "Installing MiroExporter..."
 	tmpdir="$(mktemp -d)"
 	setup_cleanup_trap
 	enter_temp_directory
@@ -82,25 +89,35 @@ start_not_currently_installed_flow(){
 
 
 show_already_installed_options() {
-        echo ""
-        echo "What do you want to do?:"
-        echo "  1) Reinstall the latest version ($LATEST_VERSION)"
-        echo "  2) Uninstall the currently installed version ($CURRENT_VERSION)"
-        echo "  3) Quit and keep the currently installed version"
-        printf "Choose an option (1/2/3): "
-        read option
+    INSTALL_WORD="Update to"
+    if [ "$UPDATE_AVAILABLE" = true ]; then
+        INSTALL_WORD="Reinstall"
+    fi
 
-        case "$option" in
-            1)
-                start_install
-                ;;
-            2)
-                start_uninstall
-                ;;
-            *)
-                echo "Bye!"
-                ;;
-        esac
+    echo ""
+    echo_strong "What do you want to do?:"
+    echo_strong "  1) $INSTALL_WORD the latest version ($LATEST_VERSION)"
+    echo_strong "  2) Uninstall MiroExporter (your project exports will not be deleted)"
+    echo_strong "  3) Quit and keep the currently installed version"
+    printf "Choose an option (1/2/3): "
+    read option
+
+    case "$option" in
+        1)
+            start_reinstall
+            ;;
+        2)
+            start_triggered_uninstall
+            ;;
+        *)
+            echo "Bye!"
+            ;;
+    esac
+}
+
+start_triggered_uninstall(){
+    print_your_files_will_be_safe_warning
+    start_uninstall
 }
 
 start_reinstall(){
@@ -211,7 +228,7 @@ is_newer_version_available() {
 
 
 
-
+## logging helpers
 echo_info() {
     echo "${GREEN}$1${NC}"
 }
@@ -221,31 +238,31 @@ echo_strong() {
 }
 
 echo_warn() {
-   echo "${RED}$1${NC}"
+    echo "${RED}$1${NC}"
 }
 
 print_header() {
-    echo_info "MiroExporter Installer"
-    echo_info "====================="
+    echo_strong "============================"
+    echo_strong "   MiroExporter Installer"
+    echo_strong "============================"
     echo ""
 }
 
-
-
-
-
+clear_terminal_window() {
+    clear
+}
 
 main() {
+    clear_terminal_window
     print_header
 
+    LATEST_VERSION=$(retrieve_latest_version)
 
-    # LATEST_VERSION=$(retrieve_latest_version)
-
-    # if command -v MiroExporter >/dev/null 2>&1; then
-    #     start_already_installed_flow
-    # else
-    #     start_not_currently_installed_flow
-    # fi
+    if command -v MiroExporter >/dev/null 2>&1; then
+        start_already_installed_flow
+    else
+        start_not_currently_installed_flow
+    fi
 }
 
 main "$@"
