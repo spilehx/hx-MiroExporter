@@ -7,6 +7,7 @@ tmpdir=""
 LATEST_VERSION=""
 CURRENT_VERSION=""
 UPDATE_AVAILABLE=false
+LATEST_VERSION_AVAILABLE=false
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -26,10 +27,13 @@ print_your_files_will_be_safe_warning() {
 }
 
 print_already_installed_description() {
-    if [ "$UPDATE_AVAILABLE" = true ]; then
+    if [ "$LATEST_VERSION_AVAILABLE" != true ]; then
+        echo_warn "Could not check GitHub for the latest release"
+        echo_info "Installed version: $CURRENT_VERSION"
+    elif [ "$UPDATE_AVAILABLE" = true ]; then
         echo_info "A newer version of MiroExporter is available"
-        echo_info "New: $LATEST_VERSION"
-        echo_info "Current: $CURRENT_VERSION"
+        echo_info "   New: $LATEST_VERSION"
+        echo_info "   Current: $CURRENT_VERSION"
     else
         echo_info "You have the latest version of MiroExporter installed: $CURRENT_VERSION"
     fi
@@ -89,14 +93,19 @@ start_not_currently_installed_flow(){
 
 
 show_already_installed_options() {
-    INSTALL_WORD="Update to"
-    if [ "$UPDATE_AVAILABLE" = true ]; then
-        INSTALL_WORD="Reinstall"
+    INSTALL_WORD="Reinstall"
+    INSTALL_LABEL="$INSTALL_WORD the latest version"
+
+    if [ "$LATEST_VERSION_AVAILABLE" = true ] && [ "$UPDATE_AVAILABLE" = true ]; then
+        INSTALL_WORD="Update to"
+        INSTALL_LABEL="$INSTALL_WORD $LATEST_VERSION"
+    elif [ "$LATEST_VERSION_AVAILABLE" = true ]; then
+        INSTALL_LABEL="$INSTALL_WORD the latest version ($LATEST_VERSION)"
     fi
 
     echo ""
     echo_strong "What do you want to do?:"
-    echo_strong "  1) $INSTALL_WORD the latest version ($LATEST_VERSION)"
+    echo_strong "  1) $INSTALL_LABEL"
     echo_strong "  2) Uninstall MiroExporter (your project exports will not be deleted)"
     echo_strong "  3) Quit and keep the currently installed version"
     printf "Choose an option (1/2/3): "
@@ -122,8 +131,11 @@ start_triggered_uninstall(){
 }
 
 start_reinstall(){
-    echo_strong "Reinstalling MiroExporter..."
-    start_uninstall
+    if [ "$UPDATE_AVAILABLE" = true ]; then
+        echo_strong "Updating MiroExporter..."
+    else
+        echo_strong "Reinstalling MiroExporter..."
+    fi
     start_install
 }
 
@@ -134,9 +146,16 @@ start_uninstall(){
 start_already_installed_flow(){
     CURRENT_VERSION=$(retrieve_currently_installed_version)
 
-    if is_newer_version_available; then
-        UPDATE_AVAILABLE=true
+    if LATEST_VERSION=$(retrieve_latest_version); then
+        LATEST_VERSION_AVAILABLE=true
+        if is_newer_version_available; then
+            UPDATE_AVAILABLE=true
+        else
+            UPDATE_AVAILABLE=false
+        fi
     else
+        LATEST_VERSION=""
+        LATEST_VERSION_AVAILABLE=false
         UPDATE_AVAILABLE=false
     fi
 
@@ -145,7 +164,14 @@ start_already_installed_flow(){
 }
 
 retrieve_latest_version() {
-    curl -sL "https://api.github.com/repos/spilehx/hx-MiroExporter/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+    release_json=$(curl -fsSL "https://api.github.com/repos/spilehx/hx-MiroExporter/releases/latest") || return 1
+    latest_version=$(printf '%s\n' "$release_json" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || return 1
+
+    if [ -z "$latest_version" ]; then
+        return 1
+    fi
+
+    printf '%s\n' "$latest_version"
 }
 
 retrieve_currently_installed_version() {
@@ -254,8 +280,6 @@ clear_terminal_window() {
 main() {
     clear_terminal_window
     print_header
-
-    LATEST_VERSION=$(retrieve_latest_version)
 
     if command -v MiroExporter >/dev/null 2>&1; then
         start_already_installed_flow
