@@ -116,21 +116,20 @@ show_already_installed_options() {
 }
 
 start_triggered_uninstall(){
+    echo_strong "Uninstalling MiroExporter..."
     print_your_files_will_be_safe_warning
     start_uninstall
 }
 
 start_reinstall(){
+    echo_strong "Reinstalling MiroExporter..."
     start_uninstall
     start_install
 }
 
 start_uninstall(){
-    echo "Uninstalling MiroExporter..."
     MiroExporter uninstall
 }
-
-
 
 start_already_installed_flow(){
     CURRENT_VERSION=$(retrieve_currently_installed_version)
