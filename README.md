@@ -35,6 +35,8 @@ You will then have `MiroExporter` on your command line and a link in your launch
 > [!IMPORTANT]
 > Needless to say, putting random commands in your terminal is risky, so have a look at [the install script](https://github.com/spilehx/hx-MiroExporter/blob/main/tools/install.sh) if you want to check
 
+## Update or uninstall
+Simply run the above command again or run on the cli with the args shown below
 
 ## Commands
 
