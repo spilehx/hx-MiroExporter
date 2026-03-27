@@ -2,11 +2,15 @@
 
 set -e
 
-tmpdir="$(mktemp -d)"
+tmpdir=""
 
 LATEST_VERSION=""
 CURRENT_VERSION=""
 UPDATE_AVAILABLE=false
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 print_new_install_description() {
 	echo "This installer will:"
@@ -35,7 +39,9 @@ confirm_proceed() {
 }
 
 cleanup() {
-	rm -rf "$tmpdir"
+	if [ -n "$tmpdir" ]; then
+		rm -rf "$tmpdir"
+	fi
 }
 
 setup_cleanup_trap() {
@@ -60,6 +66,7 @@ run_binary_installer() {
 
 start_install(){
     echo "Installing MiroExporter..."
+	tmpdir="$(mktemp -d)"
 	setup_cleanup_trap
 	enter_temp_directory
 	download_release_binary
@@ -110,7 +117,12 @@ start_uninstall(){
 
 start_already_installed_flow(){
     CURRENT_VERSION=$(retrieve_currently_installed_version)
-    UPDATE_AVAILABLE=$(is_newer_version_available)
+
+    if is_newer_version_available; then
+        UPDATE_AVAILABLE=true
+    else
+        UPDATE_AVAILABLE=false
+    fi
 
     print_already_installed_description
     show_already_installed_options
@@ -197,14 +209,43 @@ is_newer_version_available() {
     return 1
 }
 
-main() {
-    LATEST_VERSION=$(retrieve_latest_version)
 
-    if command -v MiroExporter >/dev/null 2>&1; then
-        start_already_installed_flow
-    else
-        start_not_currently_installed_flow
-    fi
+
+
+echo_info() {
+    echo "${GREEN}$1${NC}"
+}
+
+echo_strong() {
+    echo "${BLUE}$1${NC}"
+}
+
+echo_warn() {
+   echo "${RED}$1${NC}"
+}
+
+print_header() {
+    echo_info "MiroExporter Installer"
+    echo_info "====================="
+    echo ""
+}
+
+
+
+
+
+
+main() {
+    print_header
+
+
+    # LATEST_VERSION=$(retrieve_latest_version)
+
+    # if command -v MiroExporter >/dev/null 2>&1; then
+    #     start_already_installed_flow
+    # else
+    #     start_not_currently_installed_flow
+    # fi
 }
 
 main "$@"
