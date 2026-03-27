@@ -252,6 +252,49 @@ is_newer_version_available() {
 }
 
 
+check_system_requirements() {
+    if [ "$(uname -s)" != "Linux" ]; then
+        echo_warn "This installer is only supported on Debian-based Linux systems such as Ubuntu."
+        exit 1
+    fi
+
+    if [ ! -r /etc/os-release ]; then
+        echo_warn "Could not determine your Linux distribution."
+        echo_warn "This installer is only supported on Debian-based Linux systems such as Ubuntu."
+        exit 1
+    fi
+
+    os_id=""
+    os_id_like=""
+
+    while IFS='=' read -r key value; do
+        value=$(printf '%s' "$value" | tr -d '"')
+        case "$key" in
+            ID)
+                os_id=$value
+                ;;
+            ID_LIKE)
+                os_id_like=$value
+                ;;
+        esac
+    done < /etc/os-release
+
+    case " $os_id $os_id_like " in
+        *" debian "*|*" ubuntu "*)
+            ;;
+        *)
+            echo_warn "Unsupported Linux distribution: ${os_id:-unknown}"
+            echo_warn "This installer is only supported on Debian-based Linux systems such as Ubuntu."
+            exit 1
+            ;;
+    esac
+
+    if ! command -v curl >/dev/null 2>&1; then
+        echo_warn "curl is required to run this installer. Please install curl and try again."
+        exit 1
+    fi
+}
+
 
 ## logging helpers
 echo_info() {
@@ -278,6 +321,7 @@ clear_terminal_window() {
 }
 
 main() {
+    check_system_requirements
     clear_terminal_window
     print_header
 
